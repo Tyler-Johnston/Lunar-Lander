@@ -1,4 +1,5 @@
 
+using Microsoft.Xna.Framework;
 using System;
 
 namespace Random
@@ -6,6 +7,13 @@ namespace Random
     public class RandomMisc
     {
         private RandomMT m_random = new RandomMT();
+
+        public RandomMisc()
+        {
+            DateTime currentTime = DateTime.Now;
+            long milliseconds = currentTime.Ticks / TimeSpan.TicksPerMillisecond;
+            m_random.seed((ulong)milliseconds);
+        }
 
         public ulong next()
         {

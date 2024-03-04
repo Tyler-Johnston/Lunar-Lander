@@ -155,7 +155,7 @@ namespace Random
 		}
 
 		// initializes mt[N] with a seed
-		private void seed(ulong s)
+		public void seed(ulong s)
 		{
 			mt[0] = s & 0xffffffffUL;
 			for (mti = 1; mti < N; mti++)

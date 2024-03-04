@@ -19,8 +19,12 @@ namespace CS5410
 
         protected override void Initialize()
         {
-            m_graphics.PreferredBackBufferWidth = 1920;
-            m_graphics.PreferredBackBufferHeight = 1080;
+            // adjusted this because the default was too big for my laptop screen and i couldnt see everything
+            m_graphics.PreferredBackBufferWidth = 1300;
+            m_graphics.PreferredBackBufferHeight = 750;
+
+            // m_graphics.PreferredBackBufferWidth = 1920;
+            // m_graphics.PreferredBackBufferHeight = 1080;
 
             m_graphics.ApplyChanges();
 
@@ -54,7 +58,6 @@ namespace CS5410
                 item.Value.loadContent(this.Content);
             }
         }
-
         protected override void Update(GameTime gameTime)
         {
             GameStateEnum nextStateEnum = m_currentState.processInput(gameTime);
