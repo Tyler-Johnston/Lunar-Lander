@@ -15,12 +15,14 @@ namespace CS5410
         private float minY = 0.01f;
         private float maxY = 0.49f;
         Texture2D pixelTexture;
+        private Texture2D m_background;
         private RandomMisc randomMisc = new RandomMisc();
         private List<Vector2> terrain;
 
         public override void loadContent(ContentManager contentManager)
         {
             m_font = contentManager.Load<SpriteFont>("Fonts/menu");
+            m_background = contentManager.Load<Texture2D>("Images/background");
             pixelTexture = new Texture2D(m_graphics.GraphicsDevice, 1, 1);
             pixelTexture.SetData(new[] { Color.White });
             InitializeTerrain();
@@ -65,7 +67,7 @@ namespace CS5410
             float displacement = roughness * (float)randomMisc.nextGaussian(0, .375) * Math.Abs(end.X - start.X);
             midY += displacement;
 
-            // Adjust minY and maxY to reflect the correct bounds for terrain generation
+            // Adjust minY and maxY to reflect the correct bounds for terrain generation (above bottom and below halfway point)
             float minY = 0.01f;
             float maxY = 0.49f;
             midY = Math.Min(Math.Max(midY, minY), maxY);
@@ -79,7 +81,6 @@ namespace CS5410
             left.AddRange(right);
             return left;
         }
-
 
         private void AddSafeZone(List<Vector2> terrain, float safeZoneWidth)
         {
@@ -124,6 +125,8 @@ namespace CS5410
         public override void render(GameTime gameTime)
         {
             m_spriteBatch.Begin();
+
+            m_spriteBatch.Draw(m_background, new Rectangle(0, 0, m_graphics.GraphicsDevice.Viewport.Width, m_graphics.GraphicsDevice.Viewport.Height), Color.White);
 
             float scaleX = m_graphics.PreferredBackBufferWidth;
             float scaleY = m_graphics.PreferredBackBufferHeight;
