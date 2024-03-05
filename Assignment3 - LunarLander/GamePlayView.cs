@@ -21,8 +21,8 @@ namespace CS5410
         private float maxY = 0.60f;
         private int level = 1;
         private Texture2D m_background;
+        private LunarLander lunarLander;
         private Texture2D m_lunarLander;
-        private Vector2 m_landerPosition;
 
         private RandomMisc randomMisc = new RandomMisc();
         private float m_landerScale;
@@ -219,15 +219,16 @@ namespace CS5410
             // Randomize X position
             float landerX = (float)randomMisc.nextDoubleInRange(0, screenWidth - (m_lunarLander.Width * m_landerScale));
 
-            // Set lander position ensuring it doesn't overlap with the terrain
-            m_landerPosition = new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale));
+            // Generate a random rotation. Assuming full rotation is from 0 to 2*PI radians
+            float randomRotation = (float)(randomMisc.nextDouble() * Math.PI * 2);
+            
+            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale);
         }
 
         public override void render(GameTime gameTime)
         {
             m_spriteBatch.Begin();
             m_spriteBatch.Draw(m_background, new Rectangle(0, 0, m_graphics.GraphicsDevice.Viewport.Width, m_graphics.GraphicsDevice.Viewport.Height), Color.White);
-            m_spriteBatch.Draw(m_lunarLander, m_landerPosition, null, Color.White, 0f, Vector2.Zero, m_landerScale, SpriteEffects.None, 0f);
             m_spriteBatch.End();
             
             foreach (EffectPass pass in m_effect.CurrentTechnique.Passes)
@@ -243,6 +244,20 @@ namespace CS5410
                     PrimitiveType.LineList, m_outline, 0, m_outline.Length / 2);
             }
             m_spriteBatch.Begin();
+            
+            Vector2 origin = new Vector2(m_lunarLander.Width / 2, m_lunarLander.Height / 2);
+            m_spriteBatch.Draw(
+                m_lunarLander,
+                position: lunarLander.Position + origin * m_landerScale,
+                sourceRectangle: null,
+                color: Color.White,
+                rotation: lunarLander.Rotation,
+                origin: origin,
+                scale: m_landerScale,
+                effects: SpriteEffects.None,
+                layerDepth: 0f
+            );
+
             m_spriteBatch.End();
         }
 
