@@ -19,7 +19,6 @@ namespace CS5410
 
         protected override void Initialize()
         {
-            // adjusted this because the default was too big for my laptop screen and i couldnt see everything
             m_graphics.PreferredBackBufferWidth = 1300;
             m_graphics.PreferredBackBufferHeight = 750;
 

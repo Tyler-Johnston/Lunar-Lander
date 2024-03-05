@@ -19,9 +19,14 @@ namespace CS5410
         private VertexPositionColor[] m_outline;
         private float minY = 0.01f;
         private float maxY = 0.60f;
-        // private int level = 1;
+        private int level = 1;
         private Texture2D m_background;
+        private Texture2D m_lunarLander;
+        private Vector2 m_landerPosition;
+
         private RandomMisc randomMisc = new RandomMisc();
+        private float m_landerScale;
+
         private List<SafeZone> safeZones;
         private List<Vector2> terrain;
 
@@ -29,9 +34,11 @@ namespace CS5410
         {
             m_font = contentManager.Load<SpriteFont>("Fonts/menu");
             m_background = contentManager.Load<Texture2D>("Images/background");
+            m_lunarLander = contentManager.Load<Texture2D>("Images/lunarLander");
             InitializeTerrain();
             GenerateTerrainOutline();
             FillTerrain();
+            InitializeLunarLander();
         }
 
         public override GameStateEnum processInput(GameTime gameTime)
@@ -128,9 +135,16 @@ namespace CS5410
             Vector2 endPoint = new Vector2(1, minY + (float)randomMisc.nextDouble() * (maxY - minY));
             int iterations = 7;
             float roughness = 4.0f;
+            float safeZoneDistance = .08f;
             safeZones = new List<SafeZone>();
-            AddSafeZones(2, .08f);
-
+            if (level == 1)
+            {
+                AddSafeZones(2, safeZoneDistance);
+            }
+            else
+            {
+                AddSafeZones(1, safeZoneDistance - .02f);
+            }
             terrain = RandomMidpointDisplacement(startPoint, endPoint, roughness, iterations);
             terrain.Insert(0, startPoint);
             terrain.Add(endPoint);
@@ -188,10 +202,32 @@ namespace CS5410
             return null;
         }
 
+        private void InitializeLunarLander()
+        {
+            int screenWidth = m_graphics.PreferredBackBufferWidth;
+            int screenHeight = m_graphics.PreferredBackBufferHeight;
+            float desiredHeightPercentage = 0.05f;
+
+            // Calculate the scale factor based on the desired height of the lunar lander relative to screen height
+            float landerHeightAtScale = screenHeight * desiredHeightPercentage;
+            m_landerScale = landerHeightAtScale / m_lunarLander.Height;
+
+            // Calculate the Y-coordinate position to ensure it's above maxY by a margin and below the top of the screen
+            float maxYScreenPosition = screenHeight * (1 - maxY); // Convert maxY to screen coordinates
+            float landerYPositionMargin = maxYScreenPosition * 0.4f; // 40% above the maxY terrain height
+
+            // Randomize X position
+            float landerX = (float)randomMisc.nextDoubleInRange(0, screenWidth - (m_lunarLander.Width * m_landerScale));
+
+            // Set lander position ensuring it doesn't overlap with the terrain
+            m_landerPosition = new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale));
+        }
+
         public override void render(GameTime gameTime)
         {
             m_spriteBatch.Begin();
             m_spriteBatch.Draw(m_background, new Rectangle(0, 0, m_graphics.GraphicsDevice.Viewport.Width, m_graphics.GraphicsDevice.Viewport.Height), Color.White);
+            m_spriteBatch.Draw(m_lunarLander, m_landerPosition, null, Color.White, 0f, Vector2.Zero, m_landerScale, SpriteEffects.None, 0f);
             m_spriteBatch.End();
             
             foreach (EffectPass pass in m_effect.CurrentTechnique.Passes)
