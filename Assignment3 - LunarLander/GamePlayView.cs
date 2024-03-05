@@ -30,6 +30,15 @@ namespace CS5410
         private List<SafeZone> safeZones;
         private List<Vector2> terrain;
 
+        public enum GameStatus
+        {
+            Playing,
+            Landed,
+            Crashed
+        }
+        private GameStatus gameStatus = GameStatus.Playing;
+
+
         public override void loadContent(ContentManager contentManager)
         {
             m_font = contentManager.Load<SpriteFont>("Fonts/menu");
@@ -245,46 +254,43 @@ namespace CS5410
             }
             m_spriteBatch.Begin();
 
-            Vector2 origin = new Vector2(m_lunarLander.Width / 2, m_lunarLander.Height / 2);
-            m_spriteBatch.Draw(
-                m_lunarLander,
-                position: lunarLander.Position + origin * m_landerScale,
-                sourceRectangle: null,
-                color: Color.White,
-                rotation: lunarLander.Rotation,
-                origin: origin,
-                scale: m_landerScale,
-                effects: SpriteEffects.None,
-                layerDepth: 0f
-            );
+            if (gameStatus != GameStatus.Crashed)
+            {
+                Vector2 origin = new Vector2(m_lunarLander.Width / 2, m_lunarLander.Height / 2);
+                m_spriteBatch.Draw(
+                    m_lunarLander,
+                    position: lunarLander.Position + origin * m_landerScale,
+                    sourceRectangle: null,
+                    color: Color.White,
+                    rotation: lunarLander.Rotation,
+                    origin: origin,
+                    scale: m_landerScale,
+                    effects: SpriteEffects.None,
+                    layerDepth: 0f);
+            }
 
             m_spriteBatch.End();
         }
 
         public override void update(GameTime gameTime)
         {
-
-            // Update the lunar lander's position based on gravity
-            lunarLander.update(gameTime);
-
-            var keyboardState = Keyboard.GetState();
-            if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
+            if (gameStatus == GameStatus.Playing)
             {
-                lunarLander.ApplyThrust();
+                lunarLander.update(gameTime);
+                var keyboardState = Keyboard.GetState();
+                if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
+                {
+                    lunarLander.ApplyThrust();
+                }
+                if (keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A))
+                {
+                    lunarLander.Rotate(-0.05f);
+                }
+                if (keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D))
+                {
+                    lunarLander.Rotate(0.05f);
+                }
             }
-            if (keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A))
-            {
-                lunarLander.Rotate(-0.05f);
-            }
-            if (keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D))
-            {
-                lunarLander.Rotate(0.05f);
-            }
-            if (keyboardState.IsKeyDown(Keys.Q))
-            {
-                Console.WriteLine(lunarLander.Speed);
-            }
-
             int scaleX = m_graphics.PreferredBackBufferWidth;
             int scaleY = m_graphics.PreferredBackBufferHeight;
             // Check for collision between the lunar lander and the terrain
@@ -292,16 +298,19 @@ namespace CS5410
             {
                 Vector2 start = new Vector2(terrain[i].X * scaleX, scaleY - (terrain[i].Y * scaleY));
                 Vector2 end = new Vector2(terrain[i + 1].X * scaleX, scaleY - (terrain[i + 1].Y * scaleY));
+                bool isFlatSurface = Math.Abs(start.Y - end.Y) < 1;
+                Vector2 bottomCenter = lunarLander.Position + new Vector2(0, m_lunarLander.Height * m_landerScale / 2);
+                bottomCenter.Y -= 5;
                 float lunarLanderRadius = m_lunarLander.Width / 2 * m_landerScale;
-                if (CollisionDetection.LineCircleIntersection(start, end, new Circle(lunarLander.Position, lunarLanderRadius)))
+                if (CollisionDetection.LineCircleIntersection(start, end, new Circle(bottomCenter, lunarLanderRadius)))
                 {
-                    if (lunarLander.RotationInDegrees >= 175 && lunarLander.RotationInDegrees <= 185 && lunarLander.Speed < 2)
+                    if (lunarLander.RotationInDegrees >= 175 && lunarLander.RotationInDegrees <= 185 && lunarLander.Speed < 2 && isFlatSurface)
                     {
-                        Console.WriteLine("GOOD");
+                        gameStatus = GameStatus.Landed;
                     }
                     else
                     {
-                        Console.WriteLine("BAD");
+                        gameStatus = GameStatus.Crashed;
                     }
                 }
             }

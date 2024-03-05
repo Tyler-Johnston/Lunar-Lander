@@ -8,7 +8,6 @@ public class LunarLander
     public float Scale { get; set; }
     private const float Gravity = 0.35f;
     private const float Thrust = -0.03f;
-    
 
     public LunarLander(Vector2 startPosition, float startRotation, float scale)
     {
@@ -17,8 +16,6 @@ public class LunarLander
         Scale = scale;
         Velocity = Vector2.Zero;
     }
-                
-
 
     public void update(GameTime gameTime)
     {
