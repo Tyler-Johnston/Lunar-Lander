@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 public class LunarLander
 {
@@ -5,9 +6,9 @@ public class LunarLander
     public Vector2 Velocity { get; private set; }
     public float Rotation { get; private set; }
     public float Scale { get; set; }
-
-    private const float Gravity = 0.1f; // Gravitational acceleration constant
-    private const float Thrust = -0.2f; // Acceleration due to thrust
+    private const float Gravity = 0.35f;
+    private const float Thrust = -0.03f;
+    
 
     public LunarLander(Vector2 startPosition, float startRotation, float scale)
     {
@@ -16,32 +17,44 @@ public class LunarLander
         Scale = scale;
         Velocity = Vector2.Zero;
     }
+                
 
 
     public void update(GameTime gameTime)
     {
-        // Apply gravity to the Y velocity
         Velocity += new Vector2(0, Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds);
-
-        // Update position based on velocity
         Position += Velocity;
+        
+    }
 
-        // Example of applying thrust (this could be triggered by user input)
-        // Velocity += new Vector2(0, Thrust * (float)gameTime.ElapsedGameTime.TotalSeconds);
+    public float Speed
+    {
+        get
+        {
+            float speed = (float)Math.Sqrt(Velocity.X * Velocity.X + Velocity.Y * Velocity.Y);
+            return speed;
+        }
+    }
 
-        // Example of rotating (this could be triggered by user input)
-        // Rotation += 0.01f; // Rotate clockwise
+    public float RotationInDegrees
+    {
+        get
+        {
+            float degrees = MathHelper.ToDegrees(Rotation);
+            // Normalize the angle to be within 0 to 360 degrees
+            degrees = (degrees + 360) % 360;
+            return degrees;
+        }
     }
 
     public void ApplyThrust()
     {
-        // Apply thrust upwards, reducing Y velocity
-        Velocity += new Vector2(0, Thrust);
+        Vector2 thrustDirection = new Vector2((float)Math.Cos(Rotation - MathHelper.PiOver2), (float)Math.Sin(Rotation - MathHelper.PiOver2));
+        Velocity += thrustDirection * Thrust;
     }
 
     public void Rotate(float rotationAmount)
     {
-        // Adjust rotation by the specified amount
         Rotation += rotationAmount;
     }
 }

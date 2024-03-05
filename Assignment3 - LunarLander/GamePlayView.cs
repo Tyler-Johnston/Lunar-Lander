@@ -41,14 +41,25 @@ namespace CS5410
             InitializeLunarLander();
         }
 
-        public override GameStateEnum processInput(GameTime gameTime)
+        private void InitializeTerrain()
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            Vector2 startPoint = new Vector2(0, minY + (float)randomMisc.nextDouble() * (maxY - minY));
+            Vector2 endPoint = new Vector2(1, minY + (float)randomMisc.nextDouble() * (maxY - minY));
+            int iterations = 7;
+            float roughness = 4.0f;
+            float safeZoneDistance = .08f;
+            safeZones = new List<SafeZone>();
+            if (level == 1)
             {
-                return GameStateEnum.MainMenu;
+                AddSafeZones(2, safeZoneDistance);
             }
-
-            return GameStateEnum.GamePlay;
+            else
+            {
+                AddSafeZones(1, safeZoneDistance - .02f);
+            }
+            terrain = RandomMidpointDisplacement(startPoint, endPoint, roughness, iterations);
+            terrain.Insert(0, startPoint);
+            terrain.Add(endPoint);
         }
 
         private void GenerateTerrainOutline()
@@ -129,25 +140,37 @@ namespace CS5410
             }
         }
 
-        private void InitializeTerrain()
+        private void InitializeLunarLander()
         {
-            Vector2 startPoint = new Vector2(0, minY + (float)randomMisc.nextDouble() * (maxY - minY));
-            Vector2 endPoint = new Vector2(1, minY + (float)randomMisc.nextDouble() * (maxY - minY));
-            int iterations = 7;
-            float roughness = 4.0f;
-            float safeZoneDistance = .08f;
-            safeZones = new List<SafeZone>();
-            if (level == 1)
+            int screenWidth = m_graphics.PreferredBackBufferWidth;
+            int screenHeight = m_graphics.PreferredBackBufferHeight;
+            float desiredHeightPercentage = 0.05f;
+
+            // Calculate the scale factor based on the desired height of the lunar lander relative to screen height
+            float landerHeightAtScale = screenHeight * desiredHeightPercentage;
+            m_landerScale = landerHeightAtScale / m_lunarLander.Height;
+
+            // Calculate the Y-coordinate position to ensure it's above maxY by a margin and below the top of the screen
+            float maxYScreenPosition = screenHeight * (1 - maxY); // Convert maxY to screen coordinates
+            float landerYPositionMargin = maxYScreenPosition * 0.4f; // 40% above the maxY terrain height
+
+            // Randomize X position
+            float landerX = (float)randomMisc.nextDoubleInRange(0, screenWidth - (m_lunarLander.Width * m_landerScale));
+
+            // Generate a random rotation. Assuming full rotation is from 0 to 2*PI radians
+            float randomRotation = (float)(randomMisc.nextDouble() * Math.PI * 2);
+            
+            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale);
+        }
+
+        public override GameStateEnum processInput(GameTime gameTime)
+        {
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
-                AddSafeZones(2, safeZoneDistance);
+                return GameStateEnum.MainMenu;
             }
-            else
-            {
-                AddSafeZones(1, safeZoneDistance - .02f);
-            }
-            terrain = RandomMidpointDisplacement(startPoint, endPoint, roughness, iterations);
-            terrain.Insert(0, startPoint);
-            terrain.Add(endPoint);
+
+            return GameStateEnum.GamePlay;
         }
 
         private List<Vector2> RandomMidpointDisplacement(Vector2 start, Vector2 end, float roughness, int iterations)
@@ -202,29 +225,6 @@ namespace CS5410
             return null;
         }
 
-        private void InitializeLunarLander()
-        {
-            int screenWidth = m_graphics.PreferredBackBufferWidth;
-            int screenHeight = m_graphics.PreferredBackBufferHeight;
-            float desiredHeightPercentage = 0.05f;
-
-            // Calculate the scale factor based on the desired height of the lunar lander relative to screen height
-            float landerHeightAtScale = screenHeight * desiredHeightPercentage;
-            m_landerScale = landerHeightAtScale / m_lunarLander.Height;
-
-            // Calculate the Y-coordinate position to ensure it's above maxY by a margin and below the top of the screen
-            float maxYScreenPosition = screenHeight * (1 - maxY); // Convert maxY to screen coordinates
-            float landerYPositionMargin = maxYScreenPosition * 0.4f; // 40% above the maxY terrain height
-
-            // Randomize X position
-            float landerX = (float)randomMisc.nextDoubleInRange(0, screenWidth - (m_lunarLander.Width * m_landerScale));
-
-            // Generate a random rotation. Assuming full rotation is from 0 to 2*PI radians
-            float randomRotation = (float)(randomMisc.nextDouble() * Math.PI * 2);
-            
-            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale);
-        }
-
         public override void render(GameTime gameTime)
         {
             m_spriteBatch.Begin();
@@ -244,7 +244,7 @@ namespace CS5410
                     PrimitiveType.LineList, m_outline, 0, m_outline.Length / 2);
             }
             m_spriteBatch.Begin();
-            
+
             Vector2 origin = new Vector2(m_lunarLander.Width / 2, m_lunarLander.Height / 2);
             m_spriteBatch.Draw(
                 m_lunarLander,
@@ -263,6 +263,48 @@ namespace CS5410
 
         public override void update(GameTime gameTime)
         {
+
+            // Update the lunar lander's position based on gravity
+            lunarLander.update(gameTime);
+
+            var keyboardState = Keyboard.GetState();
+            if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
+            {
+                lunarLander.ApplyThrust();
+            }
+            if (keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A))
+            {
+                lunarLander.Rotate(-0.05f);
+            }
+            if (keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D))
+            {
+                lunarLander.Rotate(0.05f);
+            }
+            if (keyboardState.IsKeyDown(Keys.Q))
+            {
+                Console.WriteLine(lunarLander.Speed);
+            }
+
+            int scaleX = m_graphics.PreferredBackBufferWidth;
+            int scaleY = m_graphics.PreferredBackBufferHeight;
+            // Check for collision between the lunar lander and the terrain
+            for (int i = 0; i < terrain.Count - 1; i++)
+            {
+                Vector2 start = new Vector2(terrain[i].X * scaleX, scaleY - (terrain[i].Y * scaleY));
+                Vector2 end = new Vector2(terrain[i + 1].X * scaleX, scaleY - (terrain[i + 1].Y * scaleY));
+                float lunarLanderRadius = m_lunarLander.Width / 2 * m_landerScale;
+                if (CollisionDetection.LineCircleIntersection(start, end, new Circle(lunarLander.Position, lunarLanderRadius)))
+                {
+                    if (lunarLander.RotationInDegrees >= 175 && lunarLander.RotationInDegrees <= 185 && lunarLander.Speed < 2)
+                    {
+                        Console.WriteLine("GOOD");
+                    }
+                    else
+                    {
+                        Console.WriteLine("BAD");
+                    }
+                }
+            }
         }
     }
 }
