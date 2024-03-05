@@ -15,10 +15,11 @@ namespace CS5410
         private BasicEffect m_effect;
         private VertexPositionColor[] m_vertsTris;
         private int[] m_indexTris;
+
+        private VertexPositionColor[] m_outline;
         private float minY = 0.01f;
         private float maxY = 0.60f;
         // private int level = 1;
-        Texture2D terrainTexture;
         private Texture2D m_background;
         private RandomMisc randomMisc = new RandomMisc();
         private List<SafeZone> safeZones;
@@ -28,9 +29,8 @@ namespace CS5410
         {
             m_font = contentManager.Load<SpriteFont>("Fonts/menu");
             m_background = contentManager.Load<Texture2D>("Images/background");
-            terrainTexture = new Texture2D(m_graphics.GraphicsDevice, 1, 1);
-            terrainTexture.SetData(new[] { Color.White });
             InitializeTerrain();
+            GenerateTerrainOutline();
             FillTerrain();
         }
 
@@ -42,6 +42,24 @@ namespace CS5410
             }
 
             return GameStateEnum.GamePlay;
+        }
+
+        private void GenerateTerrainOutline()
+        {
+            int terrainCount = terrain.Count;
+            m_outline = new VertexPositionColor[(terrainCount - 1) * 2];
+            int scaleX = m_graphics.PreferredBackBufferWidth;
+            int scaleY = m_graphics.PreferredBackBufferHeight;
+
+            for (int i = 0; i < terrainCount - 1; i++)
+            {
+                int index = i * 2;
+                Vector2 start = terrain[i];
+                Vector2 end = terrain[i + 1];
+
+                m_outline[index] = new VertexPositionColor(new Vector3(start.X * scaleX, scaleY - (start.Y * scaleY), 0), Color.Black);
+                m_outline[index + 1] = new VertexPositionColor(new Vector3(end.X * scaleX, scaleY - (end.Y * scaleY), 0), Color.Black);
+            }
         }
 
         private void FillTerrain()
@@ -170,12 +188,12 @@ namespace CS5410
             return null;
         }
 
-
         public override void render(GameTime gameTime)
         {
             m_spriteBatch.Begin();
             m_spriteBatch.Draw(m_background, new Rectangle(0, 0, m_graphics.GraphicsDevice.Viewport.Width, m_graphics.GraphicsDevice.Viewport.Height), Color.White);
             m_spriteBatch.End();
+            
             foreach (EffectPass pass in m_effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
@@ -184,34 +202,12 @@ namespace CS5410
                     PrimitiveType.TriangleList, 
                     m_vertsTris, 0, m_vertsTris.Length, 
                     m_indexTris, 0, m_indexTris.Length / 3);
+
+                m_graphics.GraphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList, m_outline, 0, m_outline.Length / 2);
             }
             m_spriteBatch.Begin();
-            float scaleX = m_graphics.PreferredBackBufferWidth;
-            float scaleY = m_graphics.PreferredBackBufferHeight;
-            Vector2 previousPoint = Vector2.Zero;
-
-            // ensure there's at least one point to start with
-            if (terrain.Count > 0)
-            {
-                previousPoint = new Vector2(terrain[0].X * scaleX, m_graphics.PreferredBackBufferHeight - (terrain[0].Y * scaleY));
-            }
-
-            // draw lines between points in the terrain
-            for (int i = 1; i < terrain.Count; i++)
-            {
-                Vector2 currentPoint = new Vector2(terrain[i].X * scaleX, m_graphics.PreferredBackBufferHeight - (terrain[i].Y * scaleY));
-                DrawLine(previousPoint, currentPoint, Color.White, 2);
-                previousPoint = currentPoint;
-            }
             m_spriteBatch.End();
-        }
-
-        private void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
-        {
-            Vector2 edge = end - start;
-            float angle = (float)Math.Atan2(edge.Y, edge.X);
-            m_spriteBatch.Draw(terrainTexture, new Rectangle((int)start.X, (int)start.Y, (int)edge.Length(), (int)thickness),
-                null, color, angle, new Vector2(0, 0), SpriteEffects.None, 0);
         }
 
         public override void update(GameTime gameTime)
