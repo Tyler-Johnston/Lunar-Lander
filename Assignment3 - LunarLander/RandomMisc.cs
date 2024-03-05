@@ -25,6 +25,12 @@ namespace Random
             return m_random.nextDouble();
         }
 
+        public double nextDoubleInRange(double low, double high)
+        {
+            return low + (nextDouble() * (high - low));
+        }
+
+
         public int nextRange(int low, int high)
         {
             int range = high - low + 1;
