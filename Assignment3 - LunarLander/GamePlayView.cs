@@ -169,7 +169,7 @@ namespace CS5410
             // Generate a random rotation. Assuming full rotation is from 0 to 2*PI radians
             float randomRotation = (float)(randomMisc.nextDouble() * Math.PI * 2);
             
-            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale);
+            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale, 20);
         }
 
         public override GameStateEnum processInput(GameTime gameTime)
@@ -254,19 +254,24 @@ namespace CS5410
             }
             m_spriteBatch.Begin();
 
+            string fuelText = $"Fuel: {lunarLander.Fuel:F2}";
             string speedText = $"Speed: {lunarLander.Speed:F2} m/s";
             string rotationText = $"Angle: {lunarLander.RotationInDegrees:F0}";
 
+            Color fuelColor = lunarLander.Fuel > 0.01 ? Color.Green : Color.White;
             Color speedColor = lunarLander.Speed > 2 ? Color.White : Color.Green;
             Color rotationColor = (lunarLander.RotationInDegrees <= 5 || lunarLander.RotationInDegrees >= 355) ? Color.Green : Color.White;
 
+            Vector2 fuelTextSize = m_font.MeasureString(fuelText);
             Vector2 speedTextSize = m_font.MeasureString(speedText);
             Vector2 rotationTextSize = m_font.MeasureString(rotationText);
             int screenPadding = 10;
-            Vector2 speedTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - speedTextSize.X - screenPadding, screenPadding);
-            Vector2 rotationTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - rotationTextSize.X - screenPadding, screenPadding + speedTextSize.Y);
+            Vector2 fuelTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - fuelTextSize.X - screenPadding, screenPadding);
+            Vector2 speedTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - speedTextSize.X - screenPadding, fuelTextPosition.Y + fuelTextSize.Y);
+            Vector2 rotationTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - rotationTextSize.X - screenPadding, speedTextPosition.Y + speedTextSize.Y);
 
             // Draw the text strings with conditional coloring
+            m_spriteBatch.DrawString(m_font, fuelText, fuelTextPosition, fuelColor);
             m_spriteBatch.DrawString(m_font, speedText, speedTextPosition, speedColor);
             m_spriteBatch.DrawString(m_font, rotationText, rotationTextPosition, rotationColor);
 
@@ -296,7 +301,7 @@ namespace CS5410
                 var keyboardState = Keyboard.GetState();
                 if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
                 {
-                    lunarLander.ApplyThrust();
+                    lunarLander.ApplyThrust(gameTime);
                 }
                 if (keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A))
                 {
