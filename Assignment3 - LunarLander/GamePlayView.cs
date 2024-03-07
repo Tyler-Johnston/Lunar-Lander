@@ -254,6 +254,22 @@ namespace CS5410
             }
             m_spriteBatch.Begin();
 
+            string speedText = $"Speed: {lunarLander.Speed:F2} m/s";
+            string rotationText = $"Angle: {lunarLander.RotationInDegrees:F0}";
+
+            Color speedColor = lunarLander.Speed > 2 ? Color.White : Color.Green;
+            Color rotationColor = (lunarLander.RotationInDegrees <= 5 || lunarLander.RotationInDegrees >= 355) ? Color.Green : Color.White;
+
+            Vector2 speedTextSize = m_font.MeasureString(speedText);
+            Vector2 rotationTextSize = m_font.MeasureString(rotationText);
+            int screenPadding = 10;
+            Vector2 speedTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - speedTextSize.X - screenPadding, screenPadding);
+            Vector2 rotationTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - rotationTextSize.X - screenPadding, screenPadding + speedTextSize.Y);
+
+            // Draw the text strings with conditional coloring
+            m_spriteBatch.DrawString(m_font, speedText, speedTextPosition, speedColor);
+            m_spriteBatch.DrawString(m_font, rotationText, rotationTextPosition, rotationColor);
+
             if (gameStatus != GameStatus.Crashed)
             {
                 Vector2 origin = new Vector2(m_lunarLander.Width / 2, m_lunarLander.Height / 2);
@@ -298,13 +314,12 @@ namespace CS5410
             {
                 Vector2 start = new Vector2(terrain[i].X * scaleX, scaleY - (terrain[i].Y * scaleY));
                 Vector2 end = new Vector2(terrain[i + 1].X * scaleX, scaleY - (terrain[i + 1].Y * scaleY));
-                bool isFlatSurface = Math.Abs(start.Y - end.Y) < 1;
+                bool isFlatSurface = Math.Abs(start.Y - end.Y) <= 1;
                 Vector2 bottomCenter = lunarLander.Position + new Vector2(0, m_lunarLander.Height * m_landerScale / 2);
-                bottomCenter.Y -= 5;
                 float lunarLanderRadius = m_lunarLander.Width / 2 * m_landerScale;
                 if (CollisionDetection.LineCircleIntersection(start, end, new Circle(bottomCenter, lunarLanderRadius)))
                 {
-                    if (lunarLander.RotationInDegrees >= 175 && lunarLander.RotationInDegrees <= 185 && lunarLander.Speed < 2 && isFlatSurface)
+                    if ((lunarLander.RotationInDegrees <= 5 || lunarLander.RotationInDegrees >= 355) && lunarLander.Speed < 2 && isFlatSurface)
                     {
                         gameStatus = GameStatus.Landed;
                     }

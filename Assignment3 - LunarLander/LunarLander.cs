@@ -46,7 +46,7 @@ public class LunarLander
 
     public void ApplyThrust()
     {
-        Vector2 thrustDirection = new Vector2((float)Math.Cos(Rotation - MathHelper.PiOver2), (float)Math.Sin(Rotation - MathHelper.PiOver2));
+        Vector2 thrustDirection = new Vector2((float)Math.Cos(Rotation + MathHelper.PiOver2), (float)Math.Sin(Rotation + MathHelper.PiOver2));
         Velocity += thrustDirection * Thrust;
     }
 
