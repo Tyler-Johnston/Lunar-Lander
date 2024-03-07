@@ -29,7 +29,7 @@ public class LunarLander
         get
         {
             float speed = (float)Math.Sqrt(Velocity.X * Velocity.X + Velocity.Y * Velocity.Y);
-            return speed;
+            return speed * 10;
         }
     }
 
