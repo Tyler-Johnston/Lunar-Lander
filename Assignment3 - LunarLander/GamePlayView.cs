@@ -29,7 +29,10 @@ namespace CS5410
 
         private List<SafeZone> safeZones;
         private List<Vector2> terrain;
-
+        private const int screenPadding = 10;
+        // Assuming these are class-level variables
+        private float countdown = 3;
+        private float lastUpdateTime = 0;
         public enum GameStatus
         {
             Playing,
@@ -37,7 +40,6 @@ namespace CS5410
             Crashed
         }
         private GameStatus gameStatus = GameStatus.Playing;
-
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -234,6 +236,22 @@ namespace CS5410
             return null;
         }
 
+        private void resetGameState()
+        {
+            level += 1; // Increment the level for the new game
+
+            gameStatus = GameStatus.Playing;
+            countdown = 3;
+            lastUpdateTime = 0;
+
+            // Reinitialize terrain, lunar lander, and other components as necessary
+            InitializeTerrain();
+            GenerateTerrainOutline();
+            FillTerrain();
+            InitializeLunarLander();
+        }
+
+
         public override void render(GameTime gameTime)
         {
             m_spriteBatch.Begin();
@@ -265,12 +283,10 @@ namespace CS5410
             Vector2 fuelTextSize = m_font.MeasureString(fuelText);
             Vector2 speedTextSize = m_font.MeasureString(speedText);
             Vector2 rotationTextSize = m_font.MeasureString(rotationText);
-            int screenPadding = 10;
             Vector2 fuelTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - fuelTextSize.X - screenPadding, screenPadding);
             Vector2 speedTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - speedTextSize.X - screenPadding, fuelTextPosition.Y + fuelTextSize.Y);
             Vector2 rotationTextPosition = new Vector2(m_graphics.GraphicsDevice.Viewport.Width - rotationTextSize.X - screenPadding, speedTextPosition.Y + speedTextSize.Y);
 
-            // Draw the text strings with conditional coloring
             m_spriteBatch.DrawString(m_font, fuelText, fuelTextPosition, fuelColor);
             m_spriteBatch.DrawString(m_font, speedText, speedTextPosition, speedColor);
             m_spriteBatch.DrawString(m_font, rotationText, rotationTextPosition, rotationColor);
@@ -289,13 +305,40 @@ namespace CS5410
                     effects: SpriteEffects.None,
                     layerDepth: 0f);
             }
+            if (gameStatus == GameStatus.Landed)
+            {
+                string winMessage = "You've landed successfully!";
+                Vector2 winMessageSize = m_font.MeasureString(winMessage);
+                Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, (m_graphics.GraphicsDevice.Viewport.Height / 2) - 20);
+                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.Yellow);
+
+                float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
+                if (lastUpdateTime == 0)
+                {
+                    lastUpdateTime = currentTime;
+                }
+                if (currentTime - lastUpdateTime >= 1)
+                {
+                    countdown--;
+                    lastUpdateTime = currentTime;
+                }
+
+                string countdownText = countdown > 0 ? countdown.ToString("F0") : "Go!";
+                Vector2 countdownTextSize = m_font.MeasureString(countdownText);
+                Vector2 countdownTextPosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - countdownTextSize.X) / 2, winMessagePosition.Y + 40);
+                m_spriteBatch.DrawString(m_font, countdownText, countdownTextPosition, Color.White);
+            }
 
             m_spriteBatch.End();
         }
 
         public override void update(GameTime gameTime)
         {
-            if (gameStatus == GameStatus.Playing)
+            if (gameStatus == GameStatus.Landed && countdown <= 0)
+            {
+                resetGameState();
+            }
+            else if (gameStatus == GameStatus.Playing)
             {
                 lunarLander.update(gameTime);
                 var keyboardState = Keyboard.GetState();
@@ -314,6 +357,7 @@ namespace CS5410
             }
             int scaleX = m_graphics.PreferredBackBufferWidth;
             int scaleY = m_graphics.PreferredBackBufferHeight;
+
             // Check for collision between the lunar lander and the terrain
             for (int i = 0; i < terrain.Count - 1; i++)
             {

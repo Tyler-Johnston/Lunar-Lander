@@ -6,11 +6,10 @@ public class LunarLander
     public Vector2 Velocity { get; private set; }
     public float Rotation { get; private set; }
     public float Scale { get; set; }
+    public float Fuel { get; private set; }
     private const float Gravity = 0.35f;
     private const float Thrust = -0.03f;
-    public float Fuel { get; private set; }
-    private const float FuelConsumptionRate = 1.1f; // Fuel consumed per second of thrust
-
+    private const float FuelConsumptionRate = 1.1f;
 
     public LunarLander(Vector2 startPosition, float startRotation, float scale, float initialFuel)
     {
@@ -25,7 +24,6 @@ public class LunarLander
     {
         Velocity += new Vector2(0, Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds);
         Position += Velocity;
-        
     }
 
     public float Speed
@@ -49,7 +47,6 @@ public class LunarLander
 
     public void ApplyThrust(GameTime gameTime)
     {
-        
         if (Fuel <= 0.01)
         {
             return;
