@@ -358,12 +358,22 @@ namespace CS5410
                 Vector2 countdownTextPosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - countdownTextSize.X) / 2, winMessagePosition.Y + 40);
                 m_spriteBatch.DrawString(m_font, countdownText, countdownTextPosition, Color.White);
             }
+            if (gameStatus == GameStatus.Crashed)
+            {
+                string continueMessage = "New Game? Press Y to restart";
+                Vector2 continueMessageSize = m_font.MeasureString(continueMessage);
+                Vector2 continueMessagePosition = new Vector2(
+                (m_graphics.GraphicsDevice.Viewport.Width - continueMessageSize.X) / 2,
+                (m_graphics.GraphicsDevice.Viewport.Height - continueMessageSize.Y) / 2);
+                m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
+            }
 
             m_spriteBatch.End();
         }
 
         public override void update(GameTime gameTime)
         {
+            var keyboardState = Keyboard.GetState();
             if (gameStatus == GameStatus.Landed && countdown > 0)
             {
                 if (!landedPlayed)
@@ -379,7 +389,6 @@ namespace CS5410
             else if (gameStatus == GameStatus.Playing)
             {
                 lunarLander.update(gameTime);
-                var keyboardState = Keyboard.GetState();
                 if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
                 {
                     if ((thrustersInstance.State != SoundState.Playing) && lunarLander.Fuel > .05)
@@ -411,6 +420,11 @@ namespace CS5410
                     m_explosion.Play();
                     explosionPlayed = true;
                     thrustersInstance.Stop();
+                }
+                if (keyboardState.IsKeyDown(Keys.Y))
+                {
+                    level = 0;
+                    resetGameState();
                 }
             }
             int scaleX = m_graphics.PreferredBackBufferWidth;
