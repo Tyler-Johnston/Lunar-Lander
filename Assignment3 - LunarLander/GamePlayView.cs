@@ -461,9 +461,11 @@ namespace CS5410
                 Vector2 start = new Vector2(terrain[i].X * scaleX, scaleY - (terrain[i].Y * scaleY));
                 Vector2 end = new Vector2(terrain[i + 1].X * scaleX, scaleY - (terrain[i + 1].Y * scaleY));
                 bool isFlatSurface = Math.Abs(start.Y - end.Y) <= 1;
-                Vector2 bottomCenter = lunarLander.Position + new Vector2(0, m_lunarLander.Height * m_landerScale / 2);
-                float lunarLanderRadius = m_lunarLander.Width / 2 * m_landerScale;
-                if (CollisionDetection.LineCircleIntersection(start, end, new Circle(bottomCenter, lunarLanderRadius)))
+
+                Vector2 collisionCenter = lunarLander.Position + new Vector2(m_lunarLander.Width * m_landerScale / 2, m_lunarLander.Height * m_landerScale / 2);
+                float lunarLanderRadius = m_lunarLander.Width * m_landerScale / 2;
+
+                if (CollisionDetection.LineCircleIntersection(start, end, new Circle(collisionCenter, lunarLanderRadius)))
                 {
                     if ((lunarLander.RotationInDegrees <= 5 || lunarLander.RotationInDegrees >= 355) && lunarLander.Speed < 2 && isFlatSurface)
                     {
