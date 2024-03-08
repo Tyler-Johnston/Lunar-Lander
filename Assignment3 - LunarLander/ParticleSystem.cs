@@ -10,15 +10,17 @@ namespace CS5410
         public Dictionary<long, Particle>.ValueCollection particles { get { return m_particles.Values; } }
         private RandomMisc m_random = new RandomMisc();
 
-        private Vector2 m_center;
+        public Vector2 m_center;
         private int m_sizeMean; // pixels
         private int m_sizeStdDev;   // pixels
         private float m_speedMean;  // pixels per millisecond
-        private float m_speedStDev; // pixles per millisecond
+        private float m_speedStDev; // pixels per millisecond
         private float m_lifetimeMean; // milliseconds
         private float m_lifetimeStdDev; // milliseconds
+        private int m_maxParticles; // New variable for maximum particles
+        private bool isBurstComplete = false; // To track if the burst has completed
 
-        public ParticleSystem(Vector2 center, int sizeMean, int sizeStdDev, float speedMean, float speedStdDev, int lifetimeMean, int lifetimeStdDev)
+        public ParticleSystem(Vector2 center, int sizeMean, int sizeStdDev, float speedMean, float speedStdDev, int lifetimeMean, int lifetimeStdDev, int maxParticles)
         {
             m_center = center;
             m_sizeMean = sizeMean;
@@ -27,6 +29,7 @@ namespace CS5410
             m_speedStDev = speedStdDev;
             m_lifetimeMean = lifetimeMean;
             m_lifetimeStdDev = lifetimeStdDev;
+            m_maxParticles = maxParticles;
         }
 
         private Particle create()
@@ -37,8 +40,7 @@ namespace CS5410
                     m_random.nextCircleVector(),
                     (float)m_random.nextGaussian(m_speedMean, m_speedStDev),
                     new Vector2(size, size),
-                    new System.TimeSpan(0, 0, 0, 0, (int)(m_random.nextGaussian(m_lifetimeMean, m_lifetimeStdDev)))); ;
-
+                    new System.TimeSpan(0, 0, 0, 0, (int)(m_random.nextGaussian(m_lifetimeMean, m_lifetimeStdDev))));
             return p;
         }
 
@@ -60,11 +62,19 @@ namespace CS5410
                 m_particles.Remove(key);
             }
 
-            // Generate some new particles
-            for (int i = 0; i < 8; i++)
+            // Check if we should still generate particles
+            if (!isBurstComplete && m_particles.Count < m_maxParticles)
             {
-                var particle = create();
-                m_particles.Add(particle.name, particle);
+                for (int i = 0; i < 8; i++)
+                {
+                    if (m_particles.Count >= m_maxParticles)
+                    {
+                        isBurstComplete = true; // Stop generating particles once limit is reached
+                        break;
+                    }
+                    var particle = create();
+                    m_particles.Add(particle.name, particle);
+                }
             }
         }
     }

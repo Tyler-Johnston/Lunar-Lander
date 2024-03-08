@@ -53,6 +53,7 @@ namespace CS5410
         private ParticleSystem m_particleSystemSmoke;
         private ParticleSystemRenderer m_renderFire;
         private ParticleSystemRenderer m_renderSmoke;
+        private ContentManager contentManager;
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -63,6 +64,7 @@ namespace CS5410
             m_explosion = contentManager.Load<SoundEffect>("Audio/explosion");
             m_landed = contentManager.Load<SoundEffect>("Audio/landed");
             m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
+            this.contentManager = contentManager;
 
             thrustersInstance = m_thrusters.CreateInstance();
             thrustersInstance.IsLooped = true;
@@ -79,14 +81,14 @@ namespace CS5410
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 10, 4,
                 0.12f, 0.05f,
-                2000, 500);
+                500, 100, 200);
             m_renderFire = new ParticleSystemRenderer("fire");
 
             m_particleSystemSmoke = new ParticleSystem(
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 15, 4,
                 0.07f, 0.05f,
-                3000, 1000);
+                750, 300, 200);
             m_renderSmoke = new ParticleSystemRenderer("smoke-2");
 
             m_renderFire.LoadContent(contentManager);
@@ -266,6 +268,24 @@ namespace CS5410
             terrainGenerator.GenerateTerrainOutline();
             terrainGenerator.FillTerrain();
             InitializeLunarLander();
+
+            
+            m_particleSystemFire = new ParticleSystem(
+                new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
+                10, 4,
+                0.12f, 0.05f,
+                500, 100, 200);
+            m_renderFire = new ParticleSystemRenderer("fire");
+
+            m_particleSystemSmoke = new ParticleSystem(
+                new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
+                15, 4,
+                0.07f, 0.05f,
+                750, 300, 200);
+            m_renderSmoke = new ParticleSystemRenderer("smoke-2");
+
+            m_renderFire.LoadContent(this.contentManager);
+            m_renderSmoke.LoadContent(this.contentManager);
         }
 
         private void updatePlayingState(GameTime gameTime)
@@ -384,8 +404,6 @@ namespace CS5410
 
         public override void update(GameTime gameTime)
         {
-            m_particleSystemFire.update(gameTime);
-            m_particleSystemSmoke.update(gameTime);
             updatePlayingState(gameTime);
             updateCrashedState(gameTime);
             updateLandedState(gameTime);
