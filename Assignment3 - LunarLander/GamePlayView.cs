@@ -8,42 +8,28 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Random;
 
-
-
 namespace CS5410
 
 {
     public class GamePlayView : GameStateView
     {
         private SpriteFont m_font;
+        private Texture2D m_background;
+        private Texture2D m_lunarLander;
         private BasicEffect m_effect;
         private VertexPositionColor[] m_vertsTris;
         private int[] m_indexTris;
-        private SoundEffectInstance thrustersInstance;
-
         private VertexPositionColor[] m_outline;
-        private float minY = 0.01f;
-        private float maxY = 0.60f;
-        private int level = 1;
-        private int highestLevelReached = 1;
-        private Texture2D m_background;
-        private LunarLander lunarLander;
         private Song m_music;
         private SoundEffect m_explosion;
         private SoundEffect m_landed;
         private SoundEffect m_thrusters;
-        private Texture2D m_lunarLander;
-        private bool explosionPlayed = false;
-        private bool landedPlayed = false;
-
+        private SoundEffectInstance thrustersInstance;
         private RandomMisc randomMisc = new RandomMisc();
-        private float m_landerScale;
-
+        private LunarLander lunarLander;
         private List<SafeZone> safeZones;
         private List<Vector2> terrain;
-        private const int screenPadding = 10;
-        private float countdown = 3;
-        private float lastUpdateTime = 0;
+        private float m_landerScale;
         public enum GameStatus
         {
             Playing,
@@ -51,6 +37,19 @@ namespace CS5410
             Crashed
         }
         private GameStatus gameStatus = GameStatus.Playing;
+        private float minY = 0.01f;
+        private float maxY = 0.60f;
+        private int level = 1;
+        private int highestLevelReached = 1;
+        private const int screenPadding = 10;
+        private float countdown = 3;
+        private float lastUpdateTime = 0;
+        private bool explosionPlayed = false;
+        private bool landedPlayed = false;
+        private bool thrustKeyPressed = false;
+        private bool rotateLeftPressed = false;
+        private bool rotateRightPressed = false;
+        private bool restartGamePressed = false;
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -61,8 +60,9 @@ namespace CS5410
             m_explosion = contentManager.Load<SoundEffect>("Audio/explosion");
             m_landed = contentManager.Load<SoundEffect>("Audio/landed");
             m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
+
             thrustersInstance = m_thrusters.CreateInstance();
-            thrustersInstance.IsLooped = true; // Enable looping
+            thrustersInstance.IsLooped = true;
             MediaPlayer.Play(m_music);
 
             InitializeTerrain();
@@ -95,9 +95,9 @@ namespace CS5410
         private void GenerateTerrainOutline()
         {
             int terrainCount = terrain.Count;
-            m_outline = new VertexPositionColor[(terrainCount - 1) * 2];
             int scaleX = m_graphics.PreferredBackBufferWidth;
             int scaleY = m_graphics.PreferredBackBufferHeight;
+            m_outline = new VertexPositionColor[(terrainCount - 1) * 2];
 
             for (int i = 0; i < terrainCount - 1; i++)
             {
@@ -176,18 +176,18 @@ namespace CS5410
             int screenHeight = m_graphics.PreferredBackBufferHeight;
             float desiredHeightPercentage = 0.05f;
 
-            // Calculate the scale factor based on the desired height of the lunar lander relative to screen height
+            // calculate the scale factor based on the desired height of the lunar lander relative to screen height
             float landerHeightAtScale = screenHeight * desiredHeightPercentage;
             m_landerScale = landerHeightAtScale / m_lunarLander.Height;
 
-            // Calculate the Y-coordinate position to ensure it's above maxY by a margin and below the top of the screen
-            float maxYScreenPosition = screenHeight * (1 - maxY); // Convert maxY to screen coordinates
-            float landerYPositionMargin = maxYScreenPosition * 0.4f; // 40% above the maxY terrain height
+            // calculate the Y-coordinate position to ensure it's above maxY by a margin and below the top of the screen
+            float maxYScreenPosition = screenHeight * (1 - maxY);
+            float landerYPositionMargin = maxYScreenPosition * 0.4f;
 
-            // Randomize X position
+            // randomize X position
             float landerX = (float)randomMisc.nextDoubleInRange(0, screenWidth - (m_lunarLander.Width * m_landerScale));
 
-            // Generate a random rotation. Assuming full rotation is from 0 to 2*PI radians
+            // generate a random rotation. Assuming full rotation is from 0 to 2*PI radians
             float randomRotation = (float)(randomMisc.nextDouble() * Math.PI * 2);
             
             lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale, 20);
@@ -195,6 +195,17 @@ namespace CS5410
 
         public override GameStateEnum processInput(GameTime gameTime)
         {
+
+            var keyboardState = Keyboard.GetState();
+            thrustKeyPressed = keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W);
+            rotateLeftPressed = keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A);
+            rotateRightPressed = keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D);
+
+            if (gameStatus == GameStatus.Crashed && keyboardState.IsKeyDown(Keys.Y))
+            {
+                restartGamePressed = true;
+            }
+
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
                 return GameStateEnum.MainMenu;
@@ -333,10 +344,6 @@ namespace CS5410
             }
             if (gameStatus == GameStatus.Landed)
             {
-                if (level > highestLevelReached)
-                {
-                    highestLevelReached = level;
-                }
                 string winMessage = "You've landed successfully!";
                 Vector2 winMessageSize = m_font.MeasureString(winMessage);
                 Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, (m_graphics.GraphicsDevice.Viewport.Height / 2) - 20);
@@ -371,25 +378,12 @@ namespace CS5410
             m_spriteBatch.End();
         }
 
-        public override void update(GameTime gameTime)
+        private void updatePlayingState(GameTime gameTime)
         {
-            var keyboardState = Keyboard.GetState();
-            if (gameStatus == GameStatus.Landed && countdown > 0)
-            {
-                if (!landedPlayed)
-                {
-                    m_landed.Play();
-                    landedPlayed = true;
-                }
-            }
-            else if (gameStatus == GameStatus.Landed && countdown <= 0)
-            {
-                resetGameState();
-            }
-            else if (gameStatus == GameStatus.Playing)
+            if (gameStatus == GameStatus.Playing)
             {
                 lunarLander.update(gameTime);
-                if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
+                if (thrustKeyPressed)
                 {
                     if ((thrustersInstance.State != SoundState.Playing) && lunarLander.Fuel > .05)
                     {
@@ -404,16 +398,23 @@ namespace CS5410
                         thrustersInstance.Stop();
                     }
                 }
-                if (keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A))
+                if (rotateLeftPressed)
                 {
                     lunarLander.Rotate(-0.05f);
                 }
-                if (keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D))
+                if (rotateRightPressed)
                 {
                     lunarLander.Rotate(0.05f);
                 }
+                rotateLeftPressed = false;
+                rotateRightPressed = false;
+                thrustKeyPressed = false;
             }
-            else if (gameStatus == GameStatus.Crashed) 
+        }
+
+        private void updateCrashedState()
+        {
+            if (gameStatus == GameStatus.Crashed) 
             {
                 if (!explosionPlayed) 
                 {
@@ -421,16 +422,40 @@ namespace CS5410
                     explosionPlayed = true;
                     thrustersInstance.Stop();
                 }
-                if (keyboardState.IsKeyDown(Keys.Y))
+                if (restartGamePressed)
                 {
                     level = 0;
                     resetGameState();
                 }
+                restartGamePressed = false;
             }
+        }
+
+        private void updateLandedState()
+        {
+            if (gameStatus == GameStatus.Landed && countdown > 0)
+            {
+                if (!landedPlayed)
+                {
+                    m_landed.Play();
+                    landedPlayed = true;
+                }
+            }
+            else if (gameStatus == GameStatus.Landed && countdown <= 0)
+            {
+                if (level > highestLevelReached)
+                {
+                    highestLevelReached = level;
+                }
+                resetGameState();
+            }
+        }
+
+        private void checkCollision()
+        {
             int scaleX = m_graphics.PreferredBackBufferWidth;
             int scaleY = m_graphics.PreferredBackBufferHeight;
 
-            // Check for collision between the lunar lander and the terrain
             for (int i = 0; i < terrain.Count - 1; i++)
             {
                 Vector2 start = new Vector2(terrain[i].X * scaleX, scaleY - (terrain[i].Y * scaleY));
@@ -450,6 +475,14 @@ namespace CS5410
                     }
                 }
             }
+        }
+
+        public override void update(GameTime gameTime)
+        {
+            updatePlayingState(gameTime);
+            updateCrashedState();
+            updateLandedState();
+            checkCollision();
         }
     }
 }
