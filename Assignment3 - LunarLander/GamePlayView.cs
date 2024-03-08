@@ -170,6 +170,28 @@ namespace CS5410
             }
         }
 
+        private void AddSafeZones(int count, float distance)
+        {
+            for (int i=0; i < count; i++)
+            {
+                Vector2 startPoint = new Vector2((float)randomMisc.nextDoubleInRange(.15, .85), minY + (float)randomMisc.nextDouble() * (maxY - minY));
+                Vector2 endPoint = new Vector2(startPoint.X + distance, startPoint.Y);
+                safeZones.Add(new SafeZone(startPoint, endPoint));
+            }
+        }
+
+        private SafeZone getSafeZone(Vector2 point)
+        {
+            foreach (var zone in safeZones)
+            {
+                if (point.X >= zone.Start.X && point.X <= zone.End.X)
+                {
+                    return zone;
+                }
+            }
+            return null;
+        }
+
         private void InitializeLunarLander()
         {
             int screenWidth = m_graphics.PreferredBackBufferWidth;
@@ -191,27 +213,6 @@ namespace CS5410
             float randomRotation = (float)(randomMisc.nextDouble() * Math.PI * 2);
             
             lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale, 20);
-        }
-
-        public override GameStateEnum processInput(GameTime gameTime)
-        {
-
-            var keyboardState = Keyboard.GetState();
-            thrustKeyPressed = keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W);
-            rotateLeftPressed = keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A);
-            rotateRightPressed = keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D);
-
-            if (gameStatus == GameStatus.Crashed && keyboardState.IsKeyDown(Keys.Y))
-            {
-                restartGamePressed = true;
-            }
-
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
-            {
-                return GameStateEnum.MainMenu;
-            }
-
-            return GameStateEnum.GamePlay;
         }
 
         private List<Vector2> RandomMidpointDisplacement(Vector2 start, Vector2 end, float roughness, int iterations)
@@ -244,28 +245,6 @@ namespace CS5410
             return left;
         }
 
-        private void AddSafeZones(int count, float distance)
-        {
-            for (int i=0; i < count; i++)
-            {
-                Vector2 startPoint = new Vector2((float)randomMisc.nextDoubleInRange(.15, .85), minY + (float)randomMisc.nextDouble() * (maxY - minY));
-                Vector2 endPoint = new Vector2(startPoint.X + distance, startPoint.Y);
-                safeZones.Add(new SafeZone(startPoint, endPoint));
-            }
-        }
-
-        private SafeZone getSafeZone(Vector2 point)
-        {
-            foreach (var zone in safeZones)
-            {
-                if (point.X >= zone.Start.X && point.X <= zone.End.X)
-                {
-                    return zone;
-                }
-            }
-            return null;
-        }
-
         private void resetGameState()
         {
             level += 1;
@@ -281,26 +260,29 @@ namespace CS5410
             InitializeLunarLander();
         }
 
-        public override void render(GameTime gameTime)
+
+        public override GameStateEnum processInput(GameTime gameTime)
         {
-            m_spriteBatch.Begin();
-            m_spriteBatch.Draw(m_background, new Rectangle(0, 0, m_graphics.GraphicsDevice.Viewport.Width, m_graphics.GraphicsDevice.Viewport.Height), Color.White);
-            m_spriteBatch.End();
-            
-            foreach (EffectPass pass in m_effect.CurrentTechnique.Passes)
+            var keyboardState = Keyboard.GetState();
+            thrustKeyPressed = keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W);
+            rotateLeftPressed = keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A);
+            rotateRightPressed = keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D);
+
+            if (gameStatus == GameStatus.Crashed && keyboardState.IsKeyDown(Keys.Y))
             {
-                pass.Apply();
-
-                m_graphics.GraphicsDevice.DrawUserIndexedPrimitives(
-                    PrimitiveType.TriangleList, 
-                    m_vertsTris, 0, m_vertsTris.Length, 
-                    m_indexTris, 0, m_indexTris.Length / 3);
-
-                m_graphics.GraphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.LineList, m_outline, 0, m_outline.Length / 2);
+                restartGamePressed = true;
             }
-            m_spriteBatch.Begin();
 
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
+                return GameStateEnum.MainMenu;
+            }
+
+            return GameStateEnum.GamePlay;
+        }
+
+        private void renderHUD()
+        {
             string levelText = $"Level: {level}";
             Vector2 levelTextPosition = new Vector2(screenPadding, screenPadding);
             m_spriteBatch.DrawString(m_font, levelText, levelTextPosition, Color.White);
@@ -327,7 +309,39 @@ namespace CS5410
             m_spriteBatch.DrawString(m_font, fuelText, fuelTextPosition, fuelColor);
             m_spriteBatch.DrawString(m_font, speedText, speedTextPosition, speedColor);
             m_spriteBatch.DrawString(m_font, rotationText, rotationTextPosition, rotationColor);
+        }
 
+        private void renderCrashed()
+        {
+            if (gameStatus == GameStatus.Crashed)
+            {
+                string continueMessage = "New Game? Press Y to restart";
+                Vector2 continueMessageSize = m_font.MeasureString(continueMessage);
+                Vector2 continueMessagePosition = new Vector2(
+                (m_graphics.GraphicsDevice.Viewport.Width - continueMessageSize.X) / 2,
+                (m_graphics.GraphicsDevice.Viewport.Height - continueMessageSize.Y) / 2);
+                m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
+            }
+        }
+
+        private void renderLanded()
+        {
+            if (gameStatus == GameStatus.Landed)
+            {
+                string winMessage = "You've landed successfully!";
+                Vector2 winMessageSize = m_font.MeasureString(winMessage);
+                Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, (m_graphics.GraphicsDevice.Viewport.Height / 2) - 20);
+                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.White);
+
+                string countdownText = countdown > 0 ? countdown.ToString("F0") : "Go!";
+                Vector2 countdownTextSize = m_font.MeasureString(countdownText);
+                Vector2 countdownTextPosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - countdownTextSize.X) / 2, winMessagePosition.Y + 40);
+                m_spriteBatch.DrawString(m_font, countdownText, countdownTextPosition, Color.White);
+            }
+        }
+
+        private void renderLunarLander()
+        {
             if (gameStatus != GameStatus.Crashed)
             {
                 Vector2 origin = new Vector2(m_lunarLander.Width / 2, m_lunarLander.Height / 2);
@@ -342,39 +356,30 @@ namespace CS5410
                     effects: SpriteEffects.None,
                     layerDepth: 0f);
             }
-            if (gameStatus == GameStatus.Landed)
+        }
+
+        public override void render(GameTime gameTime)
+        {
+            m_spriteBatch.Begin();
+            m_spriteBatch.Draw(m_background, new Rectangle(0, 0, m_graphics.GraphicsDevice.Viewport.Width, m_graphics.GraphicsDevice.Viewport.Height), Color.White);
+            m_spriteBatch.End();
+            foreach (EffectPass pass in m_effect.CurrentTechnique.Passes)
             {
-                string winMessage = "You've landed successfully!";
-                Vector2 winMessageSize = m_font.MeasureString(winMessage);
-                Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, (m_graphics.GraphicsDevice.Viewport.Height / 2) - 20);
-                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.White);
+                pass.Apply();
 
-                float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
-                if (lastUpdateTime == 0)
-                {
-                    lastUpdateTime = currentTime;
-                }
-                if (currentTime - lastUpdateTime >= 1)
-                {
-                    countdown--;
-                    lastUpdateTime = currentTime;
-                }
+                m_graphics.GraphicsDevice.DrawUserIndexedPrimitives(
+                    PrimitiveType.TriangleList, 
+                    m_vertsTris, 0, m_vertsTris.Length, 
+                    m_indexTris, 0, m_indexTris.Length / 3);
 
-                string countdownText = countdown > 0 ? countdown.ToString("F0") : "Go!";
-                Vector2 countdownTextSize = m_font.MeasureString(countdownText);
-                Vector2 countdownTextPosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - countdownTextSize.X) / 2, winMessagePosition.Y + 40);
-                m_spriteBatch.DrawString(m_font, countdownText, countdownTextPosition, Color.White);
+                m_graphics.GraphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList, m_outline, 0, m_outline.Length / 2);
             }
-            if (gameStatus == GameStatus.Crashed)
-            {
-                string continueMessage = "New Game? Press Y to restart";
-                Vector2 continueMessageSize = m_font.MeasureString(continueMessage);
-                Vector2 continueMessagePosition = new Vector2(
-                (m_graphics.GraphicsDevice.Viewport.Width - continueMessageSize.X) / 2,
-                (m_graphics.GraphicsDevice.Viewport.Height - continueMessageSize.Y) / 2);
-                m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
-            }
-
+            m_spriteBatch.Begin();
+            renderHUD();
+            renderLunarLander();
+            renderCrashed();
+            renderLanded();
             m_spriteBatch.End();
         }
 
@@ -431,10 +436,20 @@ namespace CS5410
             }
         }
 
-        private void updateLandedState()
+        private void updateLandedState(GameTime gameTime)
         {
             if (gameStatus == GameStatus.Landed && countdown > 0)
             {
+                float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
+                if (lastUpdateTime == 0)
+                {
+                    lastUpdateTime = currentTime;
+                }
+                else if (currentTime - lastUpdateTime >= 1)
+                {
+                    countdown--;
+                    lastUpdateTime = currentTime;
+                }
                 if (!landedPlayed)
                 {
                     m_landed.Play();
@@ -483,7 +498,7 @@ namespace CS5410
         {
             updatePlayingState(gameTime);
             updateCrashedState();
-            updateLandedState();
+            updateLandedState(gameTime);
             checkCollision();
         }
     }
