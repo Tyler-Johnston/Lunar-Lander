@@ -51,3 +51,26 @@
 /processorParam:TextureFormat=Color
 /build:Images/lunarLander.png
 
+#begin Audio/myMusic.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:Audio/myMusic.mp3
+
+#begin Audio/explosion.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/explosion.mp3
+
+#begin Audio/landed.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/landed.mp3
+
+#begin Audio/thrusters.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/thrusters.mp3

@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
 using Random;
+
+
 
 namespace CS5410
 
@@ -15,14 +19,22 @@ namespace CS5410
         private BasicEffect m_effect;
         private VertexPositionColor[] m_vertsTris;
         private int[] m_indexTris;
+        private SoundEffectInstance thrustersInstance;
 
         private VertexPositionColor[] m_outline;
         private float minY = 0.01f;
         private float maxY = 0.60f;
         private int level = 1;
+        private int highestLevelReached = 1;
         private Texture2D m_background;
         private LunarLander lunarLander;
+        private Song m_music;
+        private SoundEffect m_explosion;
+        private SoundEffect m_landed;
+        private SoundEffect m_thrusters;
         private Texture2D m_lunarLander;
+        private bool explosionPlayed = false;
+        private bool landedPlayed = false;
 
         private RandomMisc randomMisc = new RandomMisc();
         private float m_landerScale;
@@ -30,7 +42,6 @@ namespace CS5410
         private List<SafeZone> safeZones;
         private List<Vector2> terrain;
         private const int screenPadding = 10;
-        // Assuming these are class-level variables
         private float countdown = 3;
         private float lastUpdateTime = 0;
         public enum GameStatus
@@ -46,6 +57,14 @@ namespace CS5410
             m_font = contentManager.Load<SpriteFont>("Fonts/menu");
             m_background = contentManager.Load<Texture2D>("Images/background");
             m_lunarLander = contentManager.Load<Texture2D>("Images/lunarLander");
+            m_music = contentManager.Load<Song>("Audio/myMusic");
+            m_explosion = contentManager.Load<SoundEffect>("Audio/explosion");
+            m_landed = contentManager.Load<SoundEffect>("Audio/landed");
+            m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
+            thrustersInstance = m_thrusters.CreateInstance();
+            thrustersInstance.IsLooped = true; // Enable looping
+            MediaPlayer.Play(m_music);
+
             InitializeTerrain();
             GenerateTerrainOutline();
             FillTerrain();
@@ -238,19 +257,18 @@ namespace CS5410
 
         private void resetGameState()
         {
-            level += 1; // Increment the level for the new game
-
+            level += 1;
             gameStatus = GameStatus.Playing;
             countdown = 3;
             lastUpdateTime = 0;
+            explosionPlayed = false;
+            landedPlayed = false;
 
-            // Reinitialize terrain, lunar lander, and other components as necessary
             InitializeTerrain();
             GenerateTerrainOutline();
             FillTerrain();
             InitializeLunarLander();
         }
-
 
         public override void render(GameTime gameTime)
         {
@@ -272,11 +290,19 @@ namespace CS5410
             }
             m_spriteBatch.Begin();
 
+            string levelText = $"Level: {level}";
+            Vector2 levelTextPosition = new Vector2(screenPadding, screenPadding);
+            m_spriteBatch.DrawString(m_font, levelText, levelTextPosition, Color.White);
+
             string fuelText = $"Fuel: {lunarLander.Fuel:F2}";
+            if (lunarLander.Fuel < .05)
+            {
+                fuelText = $"Fuel: {0}";
+            }
             string speedText = $"Speed: {lunarLander.Speed:F2} m/s";
             string rotationText = $"Angle: {lunarLander.RotationInDegrees:F0}";
 
-            Color fuelColor = lunarLander.Fuel > 0.01 ? Color.Green : Color.White;
+            Color fuelColor = lunarLander.Fuel > 0.05 ? Color.Green : Color.White;
             Color speedColor = lunarLander.Speed > 2 ? Color.White : Color.Green;
             Color rotationColor = (lunarLander.RotationInDegrees <= 5 || lunarLander.RotationInDegrees >= 355) ? Color.Green : Color.White;
 
@@ -307,10 +333,14 @@ namespace CS5410
             }
             if (gameStatus == GameStatus.Landed)
             {
+                if (level > highestLevelReached)
+                {
+                    highestLevelReached = level;
+                }
                 string winMessage = "You've landed successfully!";
                 Vector2 winMessageSize = m_font.MeasureString(winMessage);
                 Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, (m_graphics.GraphicsDevice.Viewport.Height / 2) - 20);
-                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.Yellow);
+                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.White);
 
                 float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
                 if (lastUpdateTime == 0)
@@ -334,7 +364,15 @@ namespace CS5410
 
         public override void update(GameTime gameTime)
         {
-            if (gameStatus == GameStatus.Landed && countdown <= 0)
+            if (gameStatus == GameStatus.Landed && countdown > 0)
+            {
+                if (!landedPlayed)
+                {
+                    m_landed.Play();
+                    landedPlayed = true;
+                }
+            }
+            else if (gameStatus == GameStatus.Landed && countdown <= 0)
             {
                 resetGameState();
             }
@@ -344,7 +382,18 @@ namespace CS5410
                 var keyboardState = Keyboard.GetState();
                 if (keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W))
                 {
+                    if ((thrustersInstance.State != SoundState.Playing) && lunarLander.Fuel > .05)
+                    {
+                        thrustersInstance.Play();
+                    }
                     lunarLander.ApplyThrust(gameTime);
+                }
+                else
+                {
+                    if (thrustersInstance.State == SoundState.Playing)
+                    {
+                        thrustersInstance.Stop();
+                    }
                 }
                 if (keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A))
                 {
@@ -353,6 +402,15 @@ namespace CS5410
                 if (keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D))
                 {
                     lunarLander.Rotate(0.05f);
+                }
+            }
+            else if (gameStatus == GameStatus.Crashed) 
+            {
+                if (!explosionPlayed) 
+                {
+                    m_explosion.Play();
+                    explosionPlayed = true;
+                    thrustersInstance.Stop();
                 }
             }
             int scaleX = m_graphics.PreferredBackBufferWidth;
