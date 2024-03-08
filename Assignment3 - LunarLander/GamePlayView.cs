@@ -49,6 +49,10 @@ namespace CS5410
         private bool rotateLeftPressed = false;
         private bool rotateRightPressed = false;
         private bool restartGamePressed = false;
+        private ParticleSystem m_particleSystemFire;
+        private ParticleSystem m_particleSystemSmoke;
+        private ParticleSystemRenderer m_renderFire;
+        private ParticleSystemRenderer m_renderSmoke;
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -70,6 +74,23 @@ namespace CS5410
             terrainGenerator.InitializeTerrain();
             terrainGenerator.GenerateTerrainOutline();
             terrainGenerator.FillTerrain();
+
+            m_particleSystemFire = new ParticleSystem(
+                new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
+                10, 4,
+                0.12f, 0.05f,
+                2000, 500);
+            m_renderFire = new ParticleSystemRenderer("fire");
+
+            m_particleSystemSmoke = new ParticleSystem(
+                new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
+                15, 4,
+                0.07f, 0.05f,
+                3000, 1000);
+            m_renderSmoke = new ParticleSystemRenderer("smoke-2");
+
+            m_renderFire.LoadContent(contentManager);
+            m_renderSmoke.LoadContent(contentManager);
 
             InitializeLunarLander();
         }
@@ -223,6 +244,12 @@ namespace CS5410
             renderCrashed();
             renderLanded();
             m_spriteBatch.End();
+
+            if (gameStatus == GameStatus.Crashed)
+            {
+                m_renderSmoke.draw(m_spriteBatch, m_particleSystemSmoke);
+                m_renderFire.draw(m_spriteBatch, m_particleSystemFire); 
+            }
         }
 
         private void resetGameState()
@@ -275,10 +302,12 @@ namespace CS5410
             }
         }
 
-        private void updateCrashedState()
+        private void updateCrashedState(GameTime gameTime)
         {
             if (gameStatus == GameStatus.Crashed) 
             {
+                m_particleSystemFire.update(gameTime);
+                m_particleSystemSmoke.update(gameTime);
                 if (!explosionPlayed) 
                 {
                     m_explosion.Play();
@@ -355,8 +384,10 @@ namespace CS5410
 
         public override void update(GameTime gameTime)
         {
+            m_particleSystemFire.update(gameTime);
+            m_particleSystemSmoke.update(gameTime);
             updatePlayingState(gameTime);
-            updateCrashedState();
+            updateCrashedState(gameTime);
             updateLandedState(gameTime);
             checkCollision();
         }
