@@ -32,6 +32,16 @@ namespace CS5410
             m_maxParticles = maxParticles;
         }
 
+        public void generateParticlesForThrust(int numberOfParticles)
+{
+    for (int i = 0; i < numberOfParticles; i++)
+    {
+        Particle newParticle = create(); // Assuming 'create()' generates a new particle
+        m_particles.Add(newParticle.name, newParticle);
+    }
+}
+
+
         private Particle create()
         {
             float size = (float)m_random.nextGaussian(m_sizeMean, m_sizeStdDev);
