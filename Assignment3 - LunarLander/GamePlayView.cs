@@ -397,6 +397,8 @@ namespace CS5410
                     else
                     {
                         gameStatus = GameStatus.Crashed;
+                        m_particleSystemFire.m_center = lunarLander.Position;
+                        m_particleSystemSmoke.m_center = lunarLander.Position;
                     }
                 }
             }
