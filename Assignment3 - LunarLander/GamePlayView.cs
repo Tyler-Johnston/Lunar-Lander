@@ -11,6 +11,7 @@ using System.IO;
 using System.IO.IsolatedStorage;
 using System.Runtime.Serialization.Json;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace CS5410
 
@@ -18,7 +19,6 @@ namespace CS5410
     public class GamePlayView : GameStateView
     {
         private SpriteFont m_font;
-        private Texture2D pixel;
         private Texture2D m_background;
         private Texture2D m_lunarLander;
         private Song m_music;
@@ -50,6 +50,8 @@ namespace CS5410
         private bool rotateLeftPressed = false;
         private bool rotateRightPressed = false;
         private bool restartGamePressed = false;
+        private bool saving = false;
+        private bool loading = false;
         private ParticleSystem m_particleSystemFire;
         private ParticleSystem m_particleSystemSmoke;
         private ParticleSystem m_particleSystemFireThrust;
@@ -60,6 +62,10 @@ namespace CS5410
         private ParticleSystemRenderer m_renderFireThrust;
         private ParticleSystemRenderer m_renderSmokeThrust;
         private ContentManager contentManager;
+        private HighScore highScoreData = new HighScore();
+        private List<HighScore> highScores;
+        private List<HighScore> m_loadedState = null;
+
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -72,8 +78,7 @@ namespace CS5410
             m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
             this.contentManager = contentManager;
 
-            pixel = new Texture2D(m_graphics.GraphicsDevice, 1, 1);
-            pixel.SetData(new[] { Color.White });
+            highScores = new List<HighScore>();
 
             thrustersInstance = m_thrusters.CreateInstance();
             thrustersInstance.IsLooped = true;
@@ -119,6 +124,7 @@ namespace CS5410
             m_renderFireThrust.LoadContent(contentManager);
             m_renderSmokeThrust.LoadContent(contentManager);
             InitializeLunarLander();
+            loadSomething();
         }
 
         private Vector2 calculateThrusterEffectPosition()
@@ -182,7 +188,100 @@ namespace CS5410
                 return GameStateEnum.MainMenu;
             }
 
+            if (Keyboard.GetState().IsKeyDown(Keys.F2) || GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
+            {
+                loadSomething();
+                if (m_loadedState != null && m_loadedState.Count > 0)
+                {
+                    Console.WriteLine("LOADED HIGH SCORES (new):");
+                    foreach (var highScore in m_loadedState)
+                    {
+                        Console.WriteLine($"Level: {highScore.Level}, Score: {highScore.Score}, Name: {highScore.Name}, TimeStamp: {highScore.TimeStamp}");
+                    }
+                }
+            }
             return GameStateEnum.GamePlay;
+        }
+
+        private void saveSomething()
+        {
+            lock (this)
+            {
+                if (!this.saving)
+                {
+                    this.saving = true;
+                    finalizeSaveAsync();
+                }
+            }
+        }
+
+        private async Task finalizeSaveAsync()
+        {
+            await Task.Run(() =>
+            {
+                using (IsolatedStorageFile storage = IsolatedStorageFile.GetUserStoreForApplication())
+                {
+                    try
+                    {
+                        using (IsolatedStorageFileStream fs = storage.OpenFile("HighScores.json", FileMode.Create))
+                        {
+                            if (fs != null)
+                            {
+                                DataContractJsonSerializer mySerializer = new DataContractJsonSerializer(typeof(List<HighScore>));
+                                mySerializer.WriteObject(fs, highScores);
+                            }
+                        }
+                    }
+                    catch (IsolatedStorageException)
+                    {
+                    }
+                }
+
+                this.saving = false;
+            });
+        }
+
+        private void loadSomething()
+        {
+            lock (this)
+            {
+                if (!this.loading)
+                {
+                    this.loading = true;
+                    var result = finalizeLoadAsync();
+                    result.Wait();
+                    
+                }
+            }
+        }
+
+        private async Task finalizeLoadAsync()
+        {
+            await Task.Run(() =>
+            {
+                using (IsolatedStorageFile storage = IsolatedStorageFile.GetUserStoreForApplication())
+                {
+                    try
+                    {
+                        if (storage.FileExists("HighScores.json"))
+                        {
+                            using (IsolatedStorageFileStream fs = storage.OpenFile("HighScores.json", FileMode.Open))
+                            {
+                                if (fs != null)
+                                {
+                                    DataContractJsonSerializer mySerializer = new DataContractJsonSerializer(typeof(List<HighScore>));
+                                    m_loadedState = (List<HighScore>)mySerializer.ReadObject(fs);
+                                }
+                            }
+                        }
+                    }
+                    catch (IsolatedStorageException)
+                    {
+                    }
+                }
+
+                this.loading = false;
+            });
         }
 
         private void renderHUD()
@@ -334,6 +433,12 @@ namespace CS5410
             m_renderSmoke.LoadContent(this.contentManager);
         }
 
+        private void UpdateHighScores(HighScore newScore)
+        {
+            highScores.Add(newScore);
+            highScores = highScores.OrderByDescending(hs => hs.Level).ThenByDescending(hs => hs.Score).Take(5).ToList();
+        }
+
         private void updatePlayingState(GameTime gameTime)
         {
             if (gameStatus == GameStatus.Playing)
@@ -386,6 +491,7 @@ namespace CS5410
                     m_explosion.Play();
                     explosionPlayed = true;
                     thrustersInstance.Stop();
+                    EvaluateAndRecordHighScore();
                 }
                 if (restartGamePressed)
                 {
@@ -418,11 +524,23 @@ namespace CS5410
             }
             else if (gameStatus == GameStatus.Landed && countdown <= 0)
             {
-                if (level > highestLevelReached)
-                {
-                    highestLevelReached = level;
-                }
+                EvaluateAndRecordHighScore();
                 resetGameState();
+            }
+        }
+
+        private void EvaluateAndRecordHighScore()
+        {
+            if (gameStatus == GameStatus.Landed || gameStatus == GameStatus.Crashed && level > highestLevelReached)
+            {
+                HighScore newHighScore = new HighScore()
+                {
+                    Name = "my name!",
+                    Level = (ushort)level,
+                    TimeStamp = DateTime.Now
+                };
+                UpdateHighScores(newHighScore);
+                saveSomething();
             }
         }
 
