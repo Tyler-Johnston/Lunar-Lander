@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 public class LunarLander
 {
     public Vector2 Position { get; set; }
@@ -7,23 +8,37 @@ public class LunarLander
     public float Rotation { get; private set; }
     public float Scale { get; set; }
     public float Fuel { get; private set; }
+    private Texture2D LunarLanderImage {get; set; }
     private const float Gravity = 0.35f;
     private const float Thrust = -0.03f;
     private const float FuelConsumptionRate = 1.1f;
 
-    public LunarLander(Vector2 startPosition, float startRotation, float scale, float initialFuel)
+    public LunarLander(Vector2 startPosition, float startRotation, float scale, float initialFuel, Texture2D m_lunarLander)
     {
         Position = startPosition;
         Rotation = startRotation;
         Scale = scale;
         Velocity = Vector2.Zero;
         Fuel = initialFuel;
+        LunarLanderImage = m_lunarLander;
+
     }
 
     public void update(GameTime gameTime)
     {
         Velocity += new Vector2(0, Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds);
         Position += Velocity;
+    }
+
+        // Getter to calculate the center of the lunar lander
+    public Vector2 Center
+    {
+        get
+        {
+            return new Vector2(
+                Position.X + LunarLanderImage.Width / 2 * Scale, 
+                Position.Y + LunarLanderImage.Height / 2 * Scale);
+        }
     }
 
     public float Speed

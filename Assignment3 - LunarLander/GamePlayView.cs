@@ -18,6 +18,7 @@ namespace CS5410
     public class GamePlayView : GameStateView
     {
         private SpriteFont m_font;
+        private Texture2D pixel;
         private Texture2D m_background;
         private Texture2D m_lunarLander;
         private Song m_music;
@@ -71,6 +72,9 @@ namespace CS5410
             m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
             this.contentManager = contentManager;
 
+            pixel = new Texture2D(m_graphics.GraphicsDevice, 1, 1);
+            pixel.SetData(new[] { Color.White });
+
             thrustersInstance = m_thrusters.CreateInstance();
             thrustersInstance.IsLooped = true;
 
@@ -97,15 +101,15 @@ namespace CS5410
             m_renderSmokeThrust = new ParticleSystemRenderer("smoke-2");
 
             m_particleSystemFireThrust = new ParticleSystem(
-                new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
-                3, 4,
+                new Vector2(m_graphics.PreferredBackBufferWidth * 2, m_graphics.PreferredBackBufferHeight * 2),
+                3, 2,
                 0.12f, 0.05f,
                 500, 75, 50);
             m_renderFireThrust = new ParticleSystemRenderer("fire");
 
             m_particleSystemSmokeThrust = new ParticleSystem(
-                new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
-                6, 4,
+                new Vector2(m_graphics.PreferredBackBufferWidth * 2, m_graphics.PreferredBackBufferHeight * 2),
+                2, 2,
                 0.07f, 0.05f,
                 750, 250, 50);
             m_renderSmoke = new ParticleSystemRenderer("smoke-2");
@@ -114,28 +118,25 @@ namespace CS5410
             m_renderSmoke.LoadContent(contentManager);
             m_renderFireThrust.LoadContent(contentManager);
             m_renderSmokeThrust.LoadContent(contentManager);
-
             InitializeLunarLander();
         }
 
-private Vector2 calculateThrusterEffectPosition()
-{
-    // Offset to the bottom of the lander in local (non-rotated) space
-    float offsetX = 0f; // No horizontal offset
-    float offsetY = (m_lunarLander.Height * m_landerScale) / 2; // Offset to the bottom of the lander
+        private Vector2 calculateThrusterEffectPosition()
+        {
+            Vector2 thrusterOffsetLocal = new Vector2(0, m_lunarLander.Height / 2 * m_landerScale);
+            Vector2 rotatedOffset = RotateVector(thrusterOffsetLocal, lunarLander.Rotation);
+            Vector2 thrusterEffectPosition = lunarLander.Center + rotatedOffset;
+            return thrusterEffectPosition;
+        }
 
-    // Convert lander's rotation from degrees to radians for Math functions
-    float rotationRadians = MathHelper.ToRadians(lunarLander.RotationInDegrees);
-
-    // Calculate the rotated offset
-    float rotatedOffsetX = (float)(offsetX * Math.Cos(rotationRadians) - offsetY * Math.Sin(rotationRadians));
-    float rotatedOffsetY = (float)(offsetX * Math.Sin(rotationRadians) + offsetY * Math.Cos(rotationRadians));
-
-    // Calculate the final position of the thruster effect by applying the rotated offset to the lander's position
-    Vector2 thrusterEffectPosition = lunarLander.Position + new Vector2(rotatedOffsetX, rotatedOffsetY);
-
-    return thrusterEffectPosition;
-}
+        private Vector2 RotateVector(Vector2 vector, float angle)
+        {
+            float cosAngle = (float)Math.Cos(angle);
+            float sinAngle = (float)Math.Sin(angle);
+            return new Vector2(
+                vector.X * cosAngle - vector.Y * sinAngle,
+                vector.X * sinAngle + vector.Y * cosAngle);
+        }
 
         private void InitializeLunarLander()
         {
@@ -161,7 +162,7 @@ private Vector2 calculateThrusterEffectPosition()
             const float a = 0.15f;
             float adjustedFuel = BaseFuel / (1 + a * (level - 1));
     
-            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale, adjustedFuel);
+            lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale, adjustedFuel, m_lunarLander);
         }
 
         public override GameStateEnum processInput(GameTime gameTime)
@@ -287,7 +288,7 @@ private Vector2 calculateThrusterEffectPosition()
             renderLanded();
             m_spriteBatch.End();
 
-            if (gameStatus == GameStatus.Playing)
+            if (gameStatus == GameStatus.Playing && lunarLander.Fuel > .05)
             {
                 m_renderSmoke.draw(m_spriteBatch, m_particleSystemSmokeThrust);
                 m_renderFire.draw(m_spriteBatch, m_particleSystemFireThrust); 
@@ -315,7 +316,6 @@ private Vector2 calculateThrusterEffectPosition()
             terrainGenerator.FillTerrain();
             InitializeLunarLander();
 
-            
             m_particleSystemFire = new ParticleSystem(
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 10, 4,
