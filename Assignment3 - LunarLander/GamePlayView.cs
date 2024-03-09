@@ -34,13 +34,14 @@ namespace CS5410
         {
             Playing,
             Landed,
-            Crashed
+            Crashed,
+            Won
         }
         private GameStatus gameStatus = GameStatus.Playing;
         private float minY = 0.01f;
         private float maxY = 0.60f;
         private int level = 1;
-        private int highestLevelReached = 1;
+        private const int MAX_LEVEL = 2;
         private const int screenPadding = 10;
         private float countdown = 3;
         private float lastUpdateTime = 0;
@@ -50,6 +51,7 @@ namespace CS5410
         private bool rotateLeftPressed = false;
         private bool rotateRightPressed = false;
         private bool restartGamePressed = false;
+        private bool highScoreRecorded = false;
         private bool saving = false;
         private bool loading = false;
         private ParticleSystem m_particleSystemFire;
@@ -62,7 +64,6 @@ namespace CS5410
         private ParticleSystemRenderer m_renderFireThrust;
         private ParticleSystemRenderer m_renderSmokeThrust;
         private ContentManager contentManager;
-        private HighScore highScoreData = new HighScore();
         private List<HighScore> highScores;
         private List<HighScore> m_loadedState = null;
 
@@ -284,6 +285,22 @@ namespace CS5410
             });
         }
 
+        private void renderWon()
+        {
+            if (gameStatus == GameStatus.Won)
+            {
+                string winMessage = "You won! Congratulations!";
+                Vector2 winMessageSize = m_font.MeasureString(winMessage);
+                Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, m_graphics.GraphicsDevice.Viewport.Height / 2 - winMessageSize.Y - 20);
+                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.Yellow);
+
+                string scoreMessage = $"Your score is: Level {level}";
+                Vector2 scoreMessageSize = m_font.MeasureString(scoreMessage);
+                Vector2 scoreMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - scoreMessageSize.X) / 2, m_graphics.GraphicsDevice.Viewport.Height / 2);
+                m_spriteBatch.DrawString(m_font, scoreMessage, scoreMessagePosition, Color.Yellow);
+            }
+        }
+
         private void renderHUD()
         {
             string levelText = $"Level: {level}";
@@ -385,6 +402,7 @@ namespace CS5410
             renderLunarLander();
             renderCrashed();
             renderLanded();
+            renderWon();
             m_spriteBatch.End();
 
             if (gameStatus == GameStatus.Playing && lunarLander.Fuel > .05)
@@ -408,6 +426,7 @@ namespace CS5410
             lastUpdateTime = 0;
             explosionPlayed = false;
             landedPlayed = false;
+            highScoreRecorded = false;
 
             terrainGenerator = new TerrainGenerator(minY, maxY, level, randomMisc, m_graphics);
             terrainGenerator.InitializeTerrain();
@@ -491,7 +510,6 @@ namespace CS5410
                     m_explosion.Play();
                     explosionPlayed = true;
                     thrustersInstance.Stop();
-                    EvaluateAndRecordHighScore();
                 }
                 if (restartGamePressed)
                 {
@@ -502,36 +520,78 @@ namespace CS5410
             }
         }
 
+
         private void updateLandedState(GameTime gameTime)
         {
-            if (gameStatus == GameStatus.Landed && countdown > 0)
+            if (gameStatus == GameStatus.Landed)
             {
-                float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
-                if (lastUpdateTime == 0)
+                if (level >= MAX_LEVEL)
                 {
-                    lastUpdateTime = currentTime;
+                    gameStatus = GameStatus.Won;
+                    EvaluateAndRecordHighScore();
                 }
-                else if (currentTime - lastUpdateTime >= 1)
+                else
                 {
-                    countdown--;
-                    lastUpdateTime = currentTime;
+                    float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
+                    if (lastUpdateTime == 0)
+                    {
+                        lastUpdateTime = currentTime;
+                    }
+                    else if (currentTime - lastUpdateTime >= 1)
+                    {
+                        countdown--;
+                        lastUpdateTime = currentTime;
+                    }
+                    if (!landedPlayed)
+                    {
+                        m_landed.Play();
+                        landedPlayed = true;
+                    }
+                    if (countdown <= 0)
+                    {
+                        resetGameState();
+                    }
                 }
-                if (!landedPlayed)
-                {
-                    m_landed.Play();
-                    landedPlayed = true;
-                }
-            }
-            else if (gameStatus == GameStatus.Landed && countdown <= 0)
-            {
-                EvaluateAndRecordHighScore();
-                resetGameState();
             }
         }
 
+        // private void updateLandedState(GameTime gameTime)
+        // {
+        //     if (gameStatus == GameStatus.Landed && countdown > 0)
+        //     {
+        //         float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
+        //         if (lastUpdateTime == 0)
+        //         {
+        //             lastUpdateTime = currentTime;
+        //         }
+        //         else if (currentTime - lastUpdateTime >= 1)
+        //         {
+        //             countdown--;
+        //             lastUpdateTime = currentTime;
+        //         }
+        //         if (!landedPlayed)
+        //         {
+        //             m_landed.Play();
+        //             landedPlayed = true;
+        //         }
+        //     }
+        //     else if (gameStatus == GameStatus.Landed && countdown <= 0)
+        //     {
+        //         if (level >= MAX_LEVEL)
+        //         {
+        //             gameStatus = GameStatus.Won;
+        //             EvaluateAndRecordHighScore();
+        //         }
+        //         else
+        //         {
+        //             resetGameState();
+        //         }
+        //     }
+        // }
+
         private void EvaluateAndRecordHighScore()
         {
-            if (gameStatus == GameStatus.Landed || gameStatus == GameStatus.Crashed && level > highestLevelReached)
+            if (gameStatus == GameStatus.Won)
             {
                 HighScore newHighScore = new HighScore()
                 {
@@ -541,6 +601,7 @@ namespace CS5410
                 };
                 UpdateHighScores(newHighScore);
                 saveSomething();
+                highScoreRecorded = true;
             }
         }
 
