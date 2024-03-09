@@ -65,7 +65,7 @@ namespace CS5410
         private ParticleSystemRenderer m_renderFireThrust;
         private ParticleSystemRenderer m_renderSmokeThrust;
         private ContentManager contentManager;
-        private List<HighScore> highScores;
+        public List<HighScore> highScores {get; private set;}
         private List<HighScore> m_loadedState = null;
 
         public override void loadContent(ContentManager contentManager)
@@ -188,19 +188,6 @@ namespace CS5410
             {
                 return GameStateEnum.MainMenu;
             }
-
-            if (Keyboard.GetState().IsKeyDown(Keys.F2) || GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
-            {
-                loadSomething();
-                if (m_loadedState != null && m_loadedState.Count > 0)
-                {
-                    Console.WriteLine("LOADED HIGH SCORES (new):");
-                    foreach (var highScore in m_loadedState)
-                    {
-                        Console.WriteLine($"Level: {highScore.Level}, Score: {highScore.Score}, Name: {highScore.Name}, TimeStamp: {highScore.TimeStamp}");
-                    }
-                }
-            }
             return GameStateEnum.GamePlay;
         }
 
@@ -235,7 +222,6 @@ namespace CS5410
                     }
                     catch (IsolatedStorageException)
                     {
-                        Console.WriteLine("bad idea !!! ");
                     }
                 }
 
@@ -255,6 +241,7 @@ namespace CS5410
                     
                 }
             }
+            highScores = m_loadedState;
         }
         private async Task finalizeLoadAsync()
         {
@@ -298,7 +285,7 @@ namespace CS5410
 
         private void renderWon()
         {
-            if (gameStatus == GameStatus.Won)
+            if (gameStatus == GameStatus.Landed && level == MAX_LEVEL)
             {
                 Console.WriteLine("beat the game!");
                 string winMessage = "You won! Congratulations!";
@@ -358,7 +345,7 @@ namespace CS5410
 
         private void renderLanded()
         {
-            if (gameStatus == GameStatus.Landed)
+            if (gameStatus == GameStatus.Landed && level != MAX_LEVEL)
             {
                 string winMessage = "You've landed successfully!";
                 Vector2 winMessageSize = m_font.MeasureString(winMessage);
@@ -468,7 +455,6 @@ namespace CS5410
         {
 
             loadSomething();
-            highScores = m_loadedState;
             highScores.Add(newScore);
             highScores = highScores.OrderByDescending(hs => hs.Level).ThenByDescending(hs => hs.Score).Take(5).ToList();
         }
