@@ -12,6 +12,7 @@ using System.IO.IsolatedStorage;
 using System.Runtime.Serialization.Json;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace CS5410
 
@@ -66,7 +67,6 @@ namespace CS5410
         private ContentManager contentManager;
         private List<HighScore> highScores;
         private List<HighScore> m_loadedState = null;
-
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -235,6 +235,7 @@ namespace CS5410
                     }
                     catch (IsolatedStorageException)
                     {
+                        Console.WriteLine("bad idea !!! ");
                     }
                 }
 
@@ -255,32 +256,42 @@ namespace CS5410
                 }
             }
         }
-
         private async Task finalizeLoadAsync()
         {
             await Task.Run(() =>
             {
                 using (IsolatedStorageFile storage = IsolatedStorageFile.GetUserStoreForApplication())
                 {
-                    try
+                    if (storage.FileExists("HighScores.json"))
                     {
-                        if (storage.FileExists("HighScores.json"))
+                        using (IsolatedStorageFileStream fs = storage.OpenFile("HighScores.json", FileMode.Open))
                         {
-                            using (IsolatedStorageFileStream fs = storage.OpenFile("HighScores.json", FileMode.Open))
+                            try
                             {
-                                if (fs != null)
+                                if (fs.Length > 0)
                                 {
-                                    DataContractJsonSerializer mySerializer = new DataContractJsonSerializer(typeof(List<HighScore>));
-                                    m_loadedState = (List<HighScore>)mySerializer.ReadObject(fs);
+                                    DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(List<HighScore>));
+                                    m_loadedState = (List<HighScore>)serializer.ReadObject(fs);
                                 }
+                                else
+                                {
+                                    m_loadedState = new List<HighScore>();
+                                    Console.WriteLine("other bad!!! bad!");
+                                }
+                            }
+                            catch (SerializationException)
+                            {
+                                m_loadedState = new List<HighScore>();
+                                Console.WriteLine("got here??? bad!");
                             }
                         }
                     }
-                    catch (IsolatedStorageException)
+                    else
                     {
+                        m_loadedState = new List<HighScore>();
+                        Console.WriteLine("Got here unfortunately");
                     }
                 }
-
                 this.loading = false;
             });
         }
@@ -289,6 +300,7 @@ namespace CS5410
         {
             if (gameStatus == GameStatus.Won)
             {
+                Console.WriteLine("beat the game!");
                 string winMessage = "You won! Congratulations!";
                 Vector2 winMessageSize = m_font.MeasureString(winMessage);
                 Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, m_graphics.GraphicsDevice.Viewport.Height / 2 - winMessageSize.Y - 20);
@@ -454,6 +466,9 @@ namespace CS5410
 
         private void UpdateHighScores(HighScore newScore)
         {
+
+            loadSomething();
+            highScores = m_loadedState;
             highScores.Add(newScore);
             highScores = highScores.OrderByDescending(hs => hs.Level).ThenByDescending(hs => hs.Score).Take(5).ToList();
         }
@@ -555,43 +570,9 @@ namespace CS5410
             }
         }
 
-        // private void updateLandedState(GameTime gameTime)
-        // {
-        //     if (gameStatus == GameStatus.Landed && countdown > 0)
-        //     {
-        //         float currentTime = (float)gameTime.TotalGameTime.TotalSeconds;
-        //         if (lastUpdateTime == 0)
-        //         {
-        //             lastUpdateTime = currentTime;
-        //         }
-        //         else if (currentTime - lastUpdateTime >= 1)
-        //         {
-        //             countdown--;
-        //             lastUpdateTime = currentTime;
-        //         }
-        //         if (!landedPlayed)
-        //         {
-        //             m_landed.Play();
-        //             landedPlayed = true;
-        //         }
-        //     }
-        //     else if (gameStatus == GameStatus.Landed && countdown <= 0)
-        //     {
-        //         if (level >= MAX_LEVEL)
-        //         {
-        //             gameStatus = GameStatus.Won;
-        //             EvaluateAndRecordHighScore();
-        //         }
-        //         else
-        //         {
-        //             resetGameState();
-        //         }
-        //     }
-        // }
-
         private void EvaluateAndRecordHighScore()
         {
-            if (gameStatus == GameStatus.Won)
+            if (gameStatus == GameStatus.Won && !highScoreRecorded)
             {
                 HighScore newHighScore = new HighScore()
                 {
