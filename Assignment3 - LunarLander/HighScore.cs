@@ -23,11 +23,9 @@ namespace CS5410
         /// </summary>
         /// <param name="score"></param>
         /// <param name="level"></param>
-        public HighScore(uint score, ushort level)
+        public HighScore(uint score)
         {
-            this.Name = "Default Player";
             this.Score = score;
-            this.Level = level;
             this.TimeStamp = DateTime.Now;
 
             keys.Add(1, "one");
@@ -35,11 +33,8 @@ namespace CS5410
         }
 
         [DataMember()]
-        public string Name { get; set; }
-        [DataMember()]
+
         public uint Score { get; set; }
-        [DataMember()]
-        public ushort Level { get; set; }
         [DataMember()]
         public DateTime TimeStamp { get; set; }
         [DataMember()]

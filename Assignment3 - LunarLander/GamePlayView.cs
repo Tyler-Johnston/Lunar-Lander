@@ -7,12 +7,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Random;
-using System.IO;
-using System.IO.IsolatedStorage;
-using System.Runtime.Serialization.Json;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Runtime.Serialization;
 
 namespace CS5410
 
@@ -44,8 +38,10 @@ namespace CS5410
         private int level = 1;
         private const int MAX_LEVEL = 2;
         private const int screenPadding = 10;
+        private uint currentScore;
         private float countdown = 3;
         private float lastUpdateTime = 0;
+        private float initialFuel;
         private bool explosionPlayed = false;
         private bool landedPlayed = false;
         private bool thrustKeyPressed = false;
@@ -53,8 +49,6 @@ namespace CS5410
         private bool rotateRightPressed = false;
         private bool restartGamePressed = false;
         private bool highScoreRecorded = false;
-        private bool saving = false;
-        private bool loading = false;
         private ParticleSystem m_particleSystemFire;
         private ParticleSystem m_particleSystemSmoke;
         private ParticleSystem m_particleSystemFireThrust;
@@ -65,8 +59,6 @@ namespace CS5410
         private ParticleSystemRenderer m_renderFireThrust;
         private ParticleSystemRenderer m_renderSmokeThrust;
         private ContentManager contentManager;
-        public List<HighScore> highScores {get; private set;}
-        private List<HighScore> m_loadedState = null;
 
         public override void loadContent(ContentManager contentManager)
         {
@@ -79,7 +71,6 @@ namespace CS5410
             m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
             this.contentManager = contentManager;
 
-            highScores = new List<HighScore>();
 
             thrustersInstance = m_thrusters.CreateInstance();
             thrustersInstance.IsLooped = true;
@@ -125,7 +116,6 @@ namespace CS5410
             m_renderFireThrust.LoadContent(contentManager);
             m_renderSmokeThrust.LoadContent(contentManager);
             InitializeLunarLander();
-            loadSomething();
         }
 
         private Vector2 calculateThrusterEffectPosition()
@@ -168,6 +158,7 @@ namespace CS5410
             const float BaseFuel = 20;
             const float a = 0.15f;
             float adjustedFuel = BaseFuel / (1 + a * (level - 1));
+            initialFuel = adjustedFuel;
     
             lunarLander = new LunarLander(new Vector2(landerX, landerYPositionMargin - (m_lunarLander.Height * m_landerScale)), randomRotation, m_landerScale, adjustedFuel, m_lunarLander);
         }
@@ -184,6 +175,11 @@ namespace CS5410
                 restartGamePressed = true;
             }
 
+            if (gameStatus == GameStatus.Landed && level == MAX_LEVEL && keyboardState.IsKeyDown(Keys.Y))
+            {
+                restartGamePressed = true;
+            }
+
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
                 return GameStateEnum.MainMenu;
@@ -191,114 +187,29 @@ namespace CS5410
             return GameStateEnum.GamePlay;
         }
 
-        private void saveSomething()
-        {
-            lock (this)
-            {
-                if (!this.saving)
-                {
-                    this.saving = true;
-                    finalizeSaveAsync();
-                }
-            }
-        }
-
-        private async Task finalizeSaveAsync()
-        {
-            await Task.Run(() =>
-            {
-                using (IsolatedStorageFile storage = IsolatedStorageFile.GetUserStoreForApplication())
-                {
-                    try
-                    {
-                        using (IsolatedStorageFileStream fs = storage.OpenFile("HighScores.json", FileMode.Create))
-                        {
-                            if (fs != null)
-                            {
-                                DataContractJsonSerializer mySerializer = new DataContractJsonSerializer(typeof(List<HighScore>));
-                                mySerializer.WriteObject(fs, highScores);
-                            }
-                        }
-                    }
-                    catch (IsolatedStorageException)
-                    {
-                    }
-                }
-
-                this.saving = false;
-            });
-        }
-
-        private void loadSomething()
-        {
-            lock (this)
-            {
-                if (!this.loading)
-                {
-                    this.loading = true;
-                    var result = finalizeLoadAsync();
-                    result.Wait();
-                    
-                }
-            }
-            highScores = m_loadedState;
-        }
-        private async Task finalizeLoadAsync()
-        {
-            await Task.Run(() =>
-            {
-                using (IsolatedStorageFile storage = IsolatedStorageFile.GetUserStoreForApplication())
-                {
-                    if (storage.FileExists("HighScores.json"))
-                    {
-                        using (IsolatedStorageFileStream fs = storage.OpenFile("HighScores.json", FileMode.Open))
-                        {
-                            try
-                            {
-                                if (fs.Length > 0)
-                                {
-                                    DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(List<HighScore>));
-                                    m_loadedState = (List<HighScore>)serializer.ReadObject(fs);
-                                }
-                                else
-                                {
-                                    m_loadedState = new List<HighScore>();
-                                    Console.WriteLine("other bad!!! bad!");
-                                }
-                            }
-                            catch (SerializationException)
-                            {
-                                m_loadedState = new List<HighScore>();
-                                Console.WriteLine("got here??? bad!");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        m_loadedState = new List<HighScore>();
-                        Console.WriteLine("Got here unfortunately");
-                    }
-                }
-                this.loading = false;
-            });
-        }
-
         private void renderWon()
         {
             if (gameStatus == GameStatus.Landed && level == MAX_LEVEL)
             {
-                Console.WriteLine("beat the game!");
                 string winMessage = "You won! Congratulations!";
                 Vector2 winMessageSize = m_font.MeasureString(winMessage);
                 Vector2 winMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - winMessageSize.X) / 2, m_graphics.GraphicsDevice.Viewport.Height / 2 - winMessageSize.Y - 20);
-                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.Yellow);
+                m_spriteBatch.DrawString(m_font, winMessage, winMessagePosition, Color.White);
 
-                string scoreMessage = $"Your score is: Level {level}";
+                string scoreMessage = $"Your score is: {currentScore}";
                 Vector2 scoreMessageSize = m_font.MeasureString(scoreMessage);
-                Vector2 scoreMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - scoreMessageSize.X) / 2, m_graphics.GraphicsDevice.Viewport.Height / 2);
-                m_spriteBatch.DrawString(m_font, scoreMessage, scoreMessagePosition, Color.Yellow);
+                Vector2 scoreMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - scoreMessageSize.X) / 2, winMessagePosition.Y + winMessageSize.Y + 10); // Adjust for space after win message
+                m_spriteBatch.DrawString(m_font, scoreMessage, scoreMessagePosition, Color.White);
+
+                // string continueMessage = "New Game? Press Y to restart";
+                // Vector2 continueMessageSize = m_font.MeasureString(continueMessage);
+                // Vector2 continueMessagePosition = new Vector2(
+                //     (m_graphics.GraphicsDevice.Viewport.Width - continueMessageSize.X) / 2,
+                //     scoreMessagePosition.Y + scoreMessageSize.Y + 20);
+                // m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
             }
         }
+
 
         private void renderHUD()
         {
@@ -451,14 +362,6 @@ namespace CS5410
             m_renderSmoke.LoadContent(this.contentManager);
         }
 
-        private void UpdateHighScores(HighScore newScore)
-        {
-
-            loadSomething();
-            highScores.Add(newScore);
-            highScores = highScores.OrderByDescending(hs => hs.Level).ThenByDescending(hs => hs.Score).Take(5).ToList();
-        }
-
         private void updatePlayingState(GameTime gameTime)
         {
             if (gameStatus == GameStatus.Playing)
@@ -560,17 +463,19 @@ namespace CS5410
         {
             if (gameStatus == GameStatus.Won && !highScoreRecorded)
             {
+                float fuelUsed = initialFuel - lunarLander.Fuel;
+                uint score = (uint)Math.Max(0, (initialFuel - fuelUsed) * 100);
+                currentScore = score;
                 HighScore newHighScore = new HighScore()
                 {
-                    Name = "my name!",
-                    Level = (ushort)level,
+                    Score = score,
                     TimeStamp = DateTime.Now
                 };
-                UpdateHighScores(newHighScore);
-                saveSomething();
+                HighScoreManager.AddHighScore(newHighScore);
                 highScoreRecorded = true;
             }
         }
+
 
         private void checkCollision()
         {
