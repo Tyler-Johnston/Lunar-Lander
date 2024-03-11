@@ -69,8 +69,8 @@ namespace CS5410
                 Vector2 start = Terrain[i];
                 Vector2 end = Terrain[i + 1];
 
-                Outline[index] = new VertexPositionColor(new Vector3(start.X * scaleX, scaleY - (start.Y * scaleY), 0), Color.Black);
-                Outline[index + 1] = new VertexPositionColor(new Vector3(end.X * scaleX, scaleY - (end.Y * scaleY), 0), Color.Black);
+                Outline[index] = new VertexPositionColor(new Vector3(start.X * scaleX, scaleY - (start.Y * scaleY), 0), Color.Crimson);
+                Outline[index + 1] = new VertexPositionColor(new Vector3(end.X * scaleX, scaleY - (end.Y * scaleY), 0), Color.Crimson);
             }
         }
 

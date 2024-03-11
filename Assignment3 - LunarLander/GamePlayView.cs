@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -70,7 +69,6 @@ namespace CS5410
             m_landed = contentManager.Load<SoundEffect>("Audio/landed");
             m_thrusters = contentManager.Load<SoundEffect>("Audio/thrusters");
             this.contentManager = contentManager;
-
 
             thrustersInstance = m_thrusters.CreateInstance();
             thrustersInstance.IsLooped = true;
@@ -166,16 +164,11 @@ namespace CS5410
         public override GameStateEnum processInput(GameTime gameTime)
         {
             var keyboardState = Keyboard.GetState();
-            thrustKeyPressed = keyboardState.IsKeyDown(Keys.Up) || keyboardState.IsKeyDown(Keys.W);
-            rotateLeftPressed = keyboardState.IsKeyDown(Keys.Left) || keyboardState.IsKeyDown(Keys.A);
-            rotateRightPressed = keyboardState.IsKeyDown(Keys.Right) || keyboardState.IsKeyDown(Keys.D);
+            thrustKeyPressed = keyboardState.IsKeyDown(ControlsManager.Controls["Thrust"]);
+            rotateLeftPressed = keyboardState.IsKeyDown(ControlsManager.Controls["RotateLeft"]);
+            rotateRightPressed = keyboardState.IsKeyDown(ControlsManager.Controls["RotateRight"]);
 
             if (gameStatus == GameStatus.Crashed && keyboardState.IsKeyDown(Keys.Y))
-            {
-                restartGamePressed = true;
-            }
-
-            if (gameStatus == GameStatus.Landed && level == MAX_LEVEL && keyboardState.IsKeyDown(Keys.Y))
             {
                 restartGamePressed = true;
             }
@@ -209,8 +202,6 @@ namespace CS5410
                 // m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
             }
         }
-
-
         private void renderHUD()
         {
             string levelText = $"Level: {level}";
@@ -475,7 +466,6 @@ namespace CS5410
                 highScoreRecorded = true;
             }
         }
-
 
         private void checkCollision()
         {
