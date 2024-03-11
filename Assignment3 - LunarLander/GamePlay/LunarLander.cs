@@ -32,8 +32,7 @@ namespace CS5410.GamePlay
             Velocity += new Vector2(0, Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds);
             Position += Velocity;
         }
-
-            // Getter to calculate the center of the lunar lander
+        
         public Vector2 Center
         {
             get

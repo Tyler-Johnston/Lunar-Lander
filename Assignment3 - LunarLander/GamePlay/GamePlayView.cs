@@ -432,6 +432,11 @@ namespace CS5410.GamePlay
                 thrustersInstance.Stop();
                 if (level >= MAX_LEVEL)
                 {
+                    if (!landedPlayed)
+                    {
+                        m_landed.Play();
+                        landedPlayed = true;
+                    }
                     gameStatus = GameStatus.Won;
                     EvaluateAndRecordHighScore();
                 }

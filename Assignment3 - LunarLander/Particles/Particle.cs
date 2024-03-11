@@ -13,7 +13,6 @@ namespace CS5410.Particles
             this.speed = speed;
             this.size = size;
             this.lifetime = lifetime;
-
             this.rotation = 0;
         }
 

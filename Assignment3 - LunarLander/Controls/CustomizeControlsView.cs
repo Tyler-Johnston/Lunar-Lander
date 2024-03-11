@@ -136,7 +136,6 @@ namespace CS5410.Controls
             m_spriteBatch.End();
         }
 
-
         private float drawMenuItem(SpriteFont font, string text, float y, Color color)
         {
             Vector2 stringSize = font.MeasureString(text);

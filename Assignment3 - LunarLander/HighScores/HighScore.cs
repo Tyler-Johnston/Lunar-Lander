@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace CS5410.HighScores
@@ -15,7 +14,8 @@ namespace CS5410.HighScores
         /// <summary>
         /// Have to have a default constructor for the XmlSerializer.Deserialize method
         /// </summary>
-        public HighScore() {
+        public HighScore() 
+        {
         }
 
         /// <summary>
@@ -27,17 +27,10 @@ namespace CS5410.HighScores
         {
             this.Score = score;
             this.TimeStamp = DateTime.Now;
-
-            keys.Add(1, "one");
-            keys.Add(2, "two");
         }
-
         [DataMember()]
-
         public uint Score { get; set; }
         [DataMember()]
         public DateTime TimeStamp { get; set; }
-        [DataMember()]
-        public Dictionary<int, String> keys = new Dictionary<int, string>();
     }
 }
