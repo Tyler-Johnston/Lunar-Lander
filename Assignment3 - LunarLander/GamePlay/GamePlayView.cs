@@ -88,28 +88,28 @@ namespace CS5410.GamePlay
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 10, 4,
                 0.12f, 0.05f,
-                500, 100, 200);
+                500, 100);
             m_renderFire = new ParticleSystemRenderer("fire");
 
             m_particleSystemSmoke = new ParticleSystem(
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 15, 4,
                 0.07f, 0.05f,
-                750, 300, 200);
+                750, 300);
             m_renderSmokeThrust = new ParticleSystemRenderer("smoke-2");
 
             m_particleSystemFireThrust = new ParticleSystem(
                 new Vector2(m_graphics.PreferredBackBufferWidth * 2, m_graphics.PreferredBackBufferHeight * 2),
                 3, 2,
                 0.12f, 0.05f,
-                500, 75, 50);
+                500, 75);
             m_renderFireThrust = new ParticleSystemRenderer("fire");
 
             m_particleSystemSmokeThrust = new ParticleSystem(
                 new Vector2(m_graphics.PreferredBackBufferWidth * 2, m_graphics.PreferredBackBufferHeight * 2),
                 2, 2,
                 0.07f, 0.05f,
-                750, 250, 50);
+                750, 250);
             m_renderSmoke = new ParticleSystemRenderer("smoke-2");
 
             m_renderFire.LoadContent(contentManager);
@@ -342,14 +342,14 @@ namespace CS5410.GamePlay
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 10, 4,
                 0.12f, 0.05f,
-                500, 100, 100);
+                500, 100);
             m_renderFire = new ParticleSystemRenderer("fire");
 
             m_particleSystemSmoke = new ParticleSystem(
                 new Vector2(m_graphics.PreferredBackBufferWidth / 2, m_graphics.PreferredBackBufferHeight / 2),
                 15, 4,
                 0.07f, 0.05f,
-                750, 300, 100);
+                750, 300);
             m_renderSmoke = new ParticleSystemRenderer("smoke-2");
 
             m_renderFire.LoadContent(this.contentManager);
@@ -373,8 +373,8 @@ namespace CS5410.GamePlay
                     m_particleSystemFireThrust.m_center = thrusterEffectPosition;
                     m_particleSystemSmokeThrust.m_center = thrusterEffectPosition;
 
-                    m_particleSystemFireThrust.shipThrust(15);
-                    m_particleSystemSmokeThrust.shipThrust(15);
+                    m_particleSystemFireThrust.shipThrust(15, lunarLander.Rotation, 10);
+                    m_particleSystemSmokeThrust.shipThrust(15, lunarLander.Rotation, 10);
                 }
                 else
                 {
@@ -401,6 +401,8 @@ namespace CS5410.GamePlay
         {
             if (gameStatus == GameStatus.Crashed) 
             {
+                m_particleSystemFire.shipCrash(150);
+                m_particleSystemSmoke.shipCrash(250);
                 m_particleSystemFire.update(gameTime);
                 m_particleSystemSmoke.update(gameTime);
                 if (!explosionPlayed) 
