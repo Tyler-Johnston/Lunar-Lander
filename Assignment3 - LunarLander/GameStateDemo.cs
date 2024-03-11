@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using CS5410.Controls;
+using CS5410.HighScores;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 

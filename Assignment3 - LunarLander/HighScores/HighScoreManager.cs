@@ -4,7 +4,7 @@ using System.IO;
 using System.IO.IsolatedStorage;
 using System.Runtime.Serialization.Json;
 
-namespace CS5410
+namespace CS5410.HighScores
 {
     public static class HighScoreManager
     {

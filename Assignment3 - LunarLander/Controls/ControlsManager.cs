@@ -5,7 +5,7 @@ using System.IO.IsolatedStorage;
 using System.Runtime.Serialization.Json;
 using Microsoft.Xna.Framework.Input;
 
-namespace CS5410
+namespace CS5410.Controls
 {
     public static class ControlsManager
     {

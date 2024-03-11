@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Random;
 using System.Collections.Generic;
 
-namespace CS5410
+namespace CS5410.Particles
 {
     public class ParticleSystem
     {
@@ -32,15 +32,19 @@ namespace CS5410
             m_maxParticles = maxParticles;
         }
 
-        public void generateParticlesForThrust(int numberOfParticles)
-{
-    for (int i = 0; i < numberOfParticles; i++)
-    {
-        Particle newParticle = create(); // Assuming 'create()' generates a new particle
-        m_particles.Add(newParticle.name, newParticle);
-    }
-}
+        public void shipThrust(int numberOfParticles)
+        {
+            for (int i = 0; i < numberOfParticles; i++)
+            {
+                Particle newParticle = create();
+                m_particles.Add(newParticle.name, newParticle);
+            }
+        }
 
+        public void shipCrash()
+        {
+
+        }
 
         private Particle create()
         {

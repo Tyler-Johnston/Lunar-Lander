@@ -2,11 +2,8 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
-using CS5410; // Assuming HighScoreManager is in the same namespace, adjust if necessary
 
-namespace CS5410
+namespace CS5410.HighScores
 {
     public class HighScoresView : GameStateView
     {

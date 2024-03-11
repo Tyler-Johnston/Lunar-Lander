@@ -1,4 +1,7 @@
 ﻿using System;
+using CS5410.Controls;
+using CS5410.HighScores;
+using CS5410.Particles;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -370,8 +373,8 @@ namespace CS5410
                     m_particleSystemFireThrust.m_center = thrusterEffectPosition;
                     m_particleSystemSmokeThrust.m_center = thrusterEffectPosition;
 
-                    m_particleSystemFireThrust.generateParticlesForThrust(15);
-                    m_particleSystemSmokeThrust.generateParticlesForThrust(15);
+                    m_particleSystemFireThrust.shipThrust(15);
+                    m_particleSystemSmokeThrust.shipThrust(15);
                 }
                 else
                 {
