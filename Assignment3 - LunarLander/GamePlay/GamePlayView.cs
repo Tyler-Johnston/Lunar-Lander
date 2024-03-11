@@ -10,7 +10,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Random;
 
-namespace CS5410
+namespace CS5410.GamePlay
 
 {
     public class GamePlayView : GameStateView

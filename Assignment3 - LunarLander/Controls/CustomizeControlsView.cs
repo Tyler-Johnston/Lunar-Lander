@@ -13,7 +13,7 @@ namespace CS5410.Controls
         private SpriteFont m_fontMenuSelect;
         private bool m_waitForKeyRelease = false;
         private bool m_waitingForKeyPress = false;
-        private const string MESSAGE = "This is where you customize the controls";
+        private const string MESSAGE = "Select 'enter' followed by your new desired key binding";
         private enum MenuState
         {
             ThrustControl,

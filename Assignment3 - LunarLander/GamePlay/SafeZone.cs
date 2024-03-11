@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 
-public class SafeZone
+namespace CS5410.GamePlay
+{
+    public class SafeZone
 {
     public Vector2 Start;
     public Vector2 End;
@@ -10,4 +12,6 @@ public class SafeZone
         Start = start;
         End = end;
     }
+}
+
 }

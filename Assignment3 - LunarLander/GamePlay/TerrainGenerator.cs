@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Random;
 
-namespace CS5410
+namespace CS5410.GamePlay
 {
     public class TerrainGenerator
     {
@@ -133,7 +133,6 @@ namespace CS5410
                 Indices[v + 5] = v + 5;
             }
         }
-
 
         private void AddSafeZones(int count, float distance)
         {

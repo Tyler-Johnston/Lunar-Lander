@@ -1,4 +1,5 @@
 ﻿using CS5410.Controls;
+using CS5410.GamePlay;
 using CS5410.HighScores;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
