@@ -175,6 +175,10 @@ namespace CS5410.GamePlay
             {
                 restartGamePressed = true;
             }
+            else if (gameStatus == GameStatus.Landed && level == MAX_LEVEL && keyboardState.IsKeyDown(Keys.Y))
+            {
+                restartGamePressed = true;
+            }
 
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
@@ -197,12 +201,12 @@ namespace CS5410.GamePlay
                 Vector2 scoreMessagePosition = new Vector2((m_graphics.GraphicsDevice.Viewport.Width - scoreMessageSize.X) / 2, winMessagePosition.Y + winMessageSize.Y + 10); // Adjust for space after win message
                 m_spriteBatch.DrawString(m_font, scoreMessage, scoreMessagePosition, Color.White);
 
-                // string continueMessage = "New Game? Press Y to restart";
-                // Vector2 continueMessageSize = m_font.MeasureString(continueMessage);
-                // Vector2 continueMessagePosition = new Vector2(
-                //     (m_graphics.GraphicsDevice.Viewport.Width - continueMessageSize.X) / 2,
-                //     scoreMessagePosition.Y + scoreMessageSize.Y + 20);
-                // m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
+                string continueMessage = "Press Y to restart";
+                Vector2 continueMessageSize = m_font.MeasureString(continueMessage);
+                Vector2 continueMessagePosition = new Vector2(
+                    (m_graphics.GraphicsDevice.Viewport.Width - continueMessageSize.X) / 2,
+                    scoreMessagePosition.Y + scoreMessageSize.Y + 20);
+                m_spriteBatch.DrawString(m_font, continueMessage, continueMessagePosition, Color.White);
             }
         }
         private void renderHUD()
@@ -373,8 +377,8 @@ namespace CS5410.GamePlay
                     m_particleSystemFireThrust.m_center = thrusterEffectPosition;
                     m_particleSystemSmokeThrust.m_center = thrusterEffectPosition;
 
-                    m_particleSystemFireThrust.shipThrust(15, lunarLander.Rotation, 10);
-                    m_particleSystemSmokeThrust.shipThrust(15, lunarLander.Rotation, 10);
+                    m_particleSystemFireThrust.shipThrust(15, lunarLander.Rotation, 15);
+                    m_particleSystemSmokeThrust.shipThrust(15, lunarLander.Rotation, 15);
                 }
                 else
                 {
@@ -425,6 +429,7 @@ namespace CS5410.GamePlay
         {
             if (gameStatus == GameStatus.Landed)
             {
+                thrustersInstance.Stop();
                 if (level >= MAX_LEVEL)
                 {
                     gameStatus = GameStatus.Won;
@@ -452,6 +457,12 @@ namespace CS5410.GamePlay
                         resetGameState();
                     }
                 }
+                if (restartGamePressed)
+                {
+                    level = 0;
+                    resetGameState();
+                }
+                restartGamePressed = false;
             }
         }
 
